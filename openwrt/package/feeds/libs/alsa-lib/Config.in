@@ -1,0 +1,67 @@
+# alsa package config
+
+menu "Configuration"
+	depends on PACKAGE_alsa-lib
+
+config ALSA_LIB_EXTRA_resmgr
+	bool "Compile to support resmgr"
+	default n
+	help
+	  resmgr -
+
+config ALSA_LIB_EXTRA_aload
+	bool "Support reading /dev/aload*"
+	default n
+	help
+	  aload -
+
+config ALSA_LIB_EXTRA_mixer
+	bool "Enable the mixer component"
+	default y
+	help
+	  mixer -
+
+config ALSA_LIB_EXTRA_pcm
+	bool "Enable the pcm component"
+	default y
+	help
+	  pcm -
+
+config ALSA_LIB_EXTRA_rawmidi
+	bool "Enable the raw MIDI component"
+	default n
+	help
+	 rawmidi -
+
+config ALSA_LIB_EXTRA_hwdep
+	bool "Enable the hwdep component"
+	default n
+	help
+	  hwdep -
+
+config ALSA_LIB_EXTRA_seq
+	bool "Enable the sequencer component"
+	default n
+	help
+	  seq -
+
+config ALSA_LIB_EXTRA_ucm
+	bool "Support use-case-manager component"
+	default n
+	help
+	  ucm -
+
+config ALSA_LIB_EXTRA_topology
+	bool "Enable the DSP topology component"
+	default n
+	help
+	  topology -
+
+config ALSA_LIB_EXTRA_alisp
+	bool "Enable the alisp component"
+	default n
+	help
+	  alisp -
+
+endmenu
+

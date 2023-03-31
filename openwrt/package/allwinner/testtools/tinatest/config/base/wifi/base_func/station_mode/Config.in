@@ -1,0 +1,11 @@
+menuconfig TINATEST_BASE_WIFI_BASE_FUNC_STATION_MODE
+    bool "station_mode"
+
+if TINATEST_BASE_WIFI_BASE_FUNC_STATION_MODE
+    source "wifi_scan_basefunc/Config.in"
+    source "wifi_connect_basefunc/Config.in"
+    source "wifi_get-rssi_basefunc/Config.in"
+    source "wifi_mac_basefunc/Config.in"
+    source "wifi_remove_basefunc/Config.in"
+    source "wifi_remove-all_basefunc/Config.in"
+endif

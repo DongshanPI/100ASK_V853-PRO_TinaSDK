@@ -1,0 +1,7 @@
+menuconfig TINATEST_BASE_BT_BASE_FUNC
+    bool "base_func"
+
+if TINATEST_BASE_BT_BASE_FUNC
+    source "bt_on_basefunc/Config.in"
+    source "bt_off_basefunc/Config.in"
+endif

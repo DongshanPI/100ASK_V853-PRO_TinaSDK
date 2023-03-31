@@ -1,0 +1,71 @@
+From b5d462b32035240493cd189090ee1dddaa8b49d8 Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Fri, 29 Oct 2021 16:47:12 +0800
+Subject: [PATCH] videoconvert: support zero copy for pixel format conversion
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ gst-libs/gst/video/gstvideometa.c |  8 ++++++++
+ gst-libs/gst/video/gstvideometa.h | 20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
+ mode change 100644 => 100755 gst-libs/gst/video/gstvideometa.c
+ mode change 100644 => 100755 gst-libs/gst/video/gstvideometa.h
+
+diff --git a/gst-libs/gst/video/gstvideometa.c b/gst-libs/gst/video/gstvideometa.c
+old mode 100644
+new mode 100755
+index 4061192..b61df6a
+--- a/gst-libs/gst/video/gstvideometa.c
++++ b/gst-libs/gst/video/gstvideometa.c
+@@ -230,7 +230,15 @@ default_map (GstVideoMeta * meta, guint plane, GstMapInfo * info,
+     goto cannot_map;
+ 
+   *stride = meta->stride[plane];
++
++  OmxPrivateBuffer* sBuffer= g_new0(OmxPrivateBuffer, 1);
++
++  memcpy(sBuffer, info->data, sizeof(OmxPrivateBuffer));
++  if (sBuffer->nID == 0x5A45524F43F45059)//ASIIC magic code of "ZEROCOPY"
++    info->data = sBuffer->pAddrVirY;
++
+   *data = (guint8 *) info->data + skip;
++  g_free(sBuffer);
+ 
+   return TRUE;
+ 
+diff --git a/gst-libs/gst/video/gstvideometa.h b/gst-libs/gst/video/gstvideometa.h
+old mode 100644
+new mode 100755
+index 1a7643f..f10c58b
+--- a/gst-libs/gst/video/gstvideometa.h
++++ b/gst-libs/gst/video/gstvideometa.h
+@@ -382,6 +382,26 @@ gst_buffer_add_video_time_code_meta_full                     (GstBuffer
+                                                               guint                   frames,
+                                                               guint                   field_count);
+ 
++#if !defined(HAVE_STRUCT_OMXPRIVATEBUFFER)
++#define HAVE_STRUCT_OMXPRIVATEBUFFER
++#include <stdint.h>
++
++typedef struct OmxPrivateBuffer {
++    uint64_t       nID;
++    unsigned int   nFlag;
++    unsigned char* pAddrPhyY;
++    unsigned char* pAddrPhyC;
++    unsigned char* pAddrVirY;
++    unsigned char* pAddrVirC;
++    int            bEnableCrop;
++    int            nLeft;
++    int            nTop;
++    int            nWidth;
++    int            nHeight;
++    int            nShareBufFd;
++}OmxPrivateBuffer;
++#endif /*  HAVE_STRUCT_OMXPRIVATEBUFFER */
++
+ G_END_DECLS
+ 
+ #endif /* __GST_VIDEO_META_H__ */
+-- 
+2.29.0
+

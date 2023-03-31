@@ -1,0 +1,48 @@
+From 5b5531a32536cc37df1a6eb9e829a763c4a86102 Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Thu, 15 Jul 2021 16:01:34 +0800
+Subject: [PATCH 11/12] Add -lvchostif to link when using -lEGL on rpi
+
+This is required because libEGL from userland uses sybols
+from this library.
+
+lib/libEGL.so.1.0.0                                                                                                                                                                                                                              121: 00000000     0 FUNC    GLOBAL DEFAULT  UND vc_dispmanx_element_add
+  1552: 00000000     0 FUNC    GLOBAL DEFAULT  UND vc_dispmanx_element_add
+
+These symbols are provided by libvchostif as seen below
+
+lib/libvchostif.so
+   252: 0000b161   192 FUNC    GLOBAL DEFAULT    9 vc_dispmanx_element_add
+   809: 0000b161   192 FUNC    GLOBAL DEFAULT    9 vc_dispmanx_element_add
+
+With this explicit link, plugins fail during runtime
+
+(gst-plugin-scanner:571): GStreamer-WARNING **: Failed to load plugin '/usr/lib/gstreamer-1.0/libgstomx.so': Error relocating /usr/lib/libgstgl-1.0.so.0: vc_dispmanx_element_add: symbol not found
+(gst-plugin-scanner:571): GStreamer-WARNING **: Failed to load plugin '/usr/lib/gstreamer-1.0/libgstopengl.so': Error relocating /usr/lib/libgstgl-1.0.so.0: vc_dispmanx_element_add: symbol not found
+
+Upstream-Status: Pending
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ m4/gst-gl.m4 | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 m4/gst-gl.m4
+
+diff --git a/m4/gst-gl.m4 b/m4/gst-gl.m4
+old mode 100644
+new mode 100755
+index 633d98a..fa1050a
+--- a/m4/gst-gl.m4
++++ b/m4/gst-gl.m4
+@@ -275,7 +275,7 @@ case $host in
+                             HAVE_EGL=yes
+                             HAVE_GLES2=yes
+                             HAVE_EGL_RPI=yes
+-                            EGL_LIBS="-lbcm_host -lvcos -lvchiq_arm"
++                            EGL_LIBS="-lbcm_host -lvchostif -lvcos -lvchiq_arm"
+                             EGL_CFLAGS=""
+                             AC_DEFINE(USE_EGL_RPI, [1], [Use RPi platform])
+                           ])
+-- 
+2.29.0
+

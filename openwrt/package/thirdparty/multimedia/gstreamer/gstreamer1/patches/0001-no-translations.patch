@@ -1,0 +1,52 @@
+From 561b43d4f3495f332d08f98a2e1aefb0e572af90 Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Wed, 14 Jul 2021 20:10:58 +0800
+Subject: [PATCH] no translations
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ Makefile.am  | 2 --
+ configure.ac | 1 -
+ 2 files changed, 3 deletions(-)
+ mode change 100644 => 100755 Makefile.am
+ mode change 100644 => 100755 configure.ac
+
+diff --git a/Makefile.am b/Makefile.am
+old mode 100644
+new mode 100755
+index d9b3aca..4ea28fd
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -9,7 +9,6 @@ aclocal_DATA = gst-element-check-1.0.m4
+ SUBDIRS = pkgconfig \
+ 	gst libs plugins tests \
+ 	docs \
+-	po \
+ 	m4 \
+ 	common \
+ 	data
+@@ -22,7 +21,6 @@ endif
+ DIST_SUBDIRS = pkgconfig \
+ 	gst libs plugins tools tests \
+ 	docs \
+-	po \
+ 	m4 \
+ 	common \
+ 	data
+diff --git a/configure.ac b/configure.ac
+old mode 100644
+new mode 100755
+index 0fc9dc4..d07bdfd
+--- a/configure.ac
++++ b/configure.ac
+@@ -1125,7 +1125,6 @@ libs/gst/net/Makefile
+ plugins/Makefile
+ plugins/elements/Makefile
+ plugins/tracers/Makefile
+-po/Makefile.in
+ tests/Makefile
+ tests/benchmarks/Makefile
+ tests/check/Makefile
+-- 
+2.29.0
+

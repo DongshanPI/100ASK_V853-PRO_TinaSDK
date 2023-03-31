@@ -1,0 +1,26 @@
+From d228f9523bdc3c555dae9dbf481732385fd89788 Mon Sep 17 00:00:00 2001
+From: hongjiasen <hongjiasen@Allwinnertech.com>
+Date: Tue, 28 Dec 2021 15:14:48 +0800
+Subject: [PATCH] fix the problem pthread_getname_np fails to compile
+
+Signed-off-by: hongjiasen <hongjiasen@Allwinnertech.com>
+---
+ src/ba-transport.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ba-transport.c b/src/ba-transport.c
+index bafea69..cc0239f 100644
+--- a/src/ba-transport.c
++++ b/src/ba-transport.c
+@@ -1479,7 +1479,7 @@ void ba_transport_thread_cleanup(struct ba_transport_thread *th) {
+ 	if (th->master)
+ 		ba_transport_release(t);
+ 
+-#if DEBUG
++#if 0
+ 	/* XXX: If the order of the cleanup push is right, this function will
+ 	 *      indicate the end of the transport IO thread. */
+ 	char name[32];
+-- 
+2.29.0
+

@@ -1,0 +1,31 @@
+From d8e019d4bc59c74780d63277e6e4804ce89d31cb Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Fri, 10 Sep 2021 18:55:51 +0800
+Subject: [PATCH] disable-bt-default_reconnect-services-when-connected
+
+Signed-off-by: luoyuyi <luoyuyi@allwinnertech.com>
+---
+ plugins/policy.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/plugins/policy.c b/plugins/policy.c
+index de51e58..93d6b70 100644
+--- a/plugins/policy.c
++++ b/plugins/policy.c
+@@ -64,11 +64,10 @@ struct reconnect_data {
+ 	unsigned int attempt;
+ };
+ 
+-static const char *default_reconnect[] = {
+-			HSP_AG_UUID, HFP_AG_UUID, A2DP_SOURCE_UUID, NULL };
++static const char *default_reconnect[] = { NULL };
+ static char **reconnect_uuids = NULL;
+ 
+-static const size_t default_attempts = 7;
++static const size_t default_attempts = 0;
+ static size_t reconnect_attempts = 0;
+ 
+ static const int default_intervals[] = { 1, 2, 4, 8, 16, 32, 64 };
+-- 
+2.29.0
+

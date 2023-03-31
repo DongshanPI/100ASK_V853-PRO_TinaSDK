@@ -937,6 +937,35 @@
 		allwinner,drive = <2>;
 		allwinner,pull = <0>;
 	};
+	rgb18_pins_a: rgb18@0 {
+		allwinner,pins = "PD0", "PD1", "PD2", "PD3", "PD4", "PD5", \
+			"PD6", "PD7", "PD8", "PD9", "PD10", "PD11", \
+			"PD12", "PD13", "PD14", "PD15", "PD16", "PD17", \
+			"PD18", "PD19", "PD20", "PD21";
+		allwinner,pname = "lcdd2", "lcdd3", "lcdd4", "lcdd5", "lcdd6", "lcdd7", \
+			"lcdd10", "lcdd11", "lcdd12", "lcdd13", "lcdd14", "lcdd15", \
+			"lcdd18", "lcdd19", "lcdd20", "lcdd21", "lcdd22", "lcdd23", \
+			"lcdpclk", "lcdde", "lcdhsync", "lcdvsync";
+		allwinner,function = "lcd"; 
+		allwinner,muxsel = <2>;
+		allwinner,drive = <3>;  
+		allwinner,pull = <0>; 
+	};
+
+	rgb18_pins_b: rgb18@1 {
+			allwinner,pins = "PD0", "PD1", "PD2", "PD3", "PD4", "PD5", \
+					"PD6", "PD7", "PD8", "PD9", "PD10", "PD11", \
+					"PD12", "PD13", "PD14", "PD15", "PD16", "PD17", \
+					"PD18", "PD19", "PD20", "PD21";
+			allwinner,pname = "lcdd2", "lcdd3", "lcdd4", "lcdd5", "lcdd6", "lcdd7", \
+					"lcdd10", "lcdd11", "lcdd12", "lcdd13", "lcdd14", "lcdd15", \
+					"lcdd18", "lcdd19", "lcdd20", "lcdd21", "lcdd22", "lcdd23", \
+					"lcdpclk", "lcdde", "lcdhsync", "lcdvsync";
+			allwinner,function = "io_disabled";
+			allwinner,muxsel = <0xf>;
+			allwinner,drive = <3>;  
+			allwinner,pull = <0>; 
+	};
 };
 
 &spi0 {
@@ -1055,7 +1084,8 @@
 	twi_drv_used = <0>;
 	twi-supply = <&reg_dcdc1>;
 	twi_pkt_interval = <0>;
-	status = "disabled";
+	//status = "disabled";
+	status = "okay";
 };
 
 &twi3 {
@@ -1571,7 +1601,7 @@
 	pinctrl-names = "default", "sleep";
 	tx-delay = <7>;
 	rx-delay = <31>;
-	status = "disabled";
+	status = "okay";
 };
 
 &sdc2 {
@@ -1684,7 +1714,50 @@
 
 	disp_para_zone           = <1>;
 };
+&lcd0 {
+	/* part 1 */
+	lcd_used            = <1>;
+	lcd_driver_name     = "default_lcd";
+	lcd_backlight	    = <100>;
 
+	/* part 2 */
+	lcd_if = <0>;
+	lcd_hv_if = <0>;
+	
+	/* part 3 */
+	lcd_x               = <1024>;
+	lcd_y               = <600>;
+	lcd_width           = <154>;
+	lcd_height          = <85>;
+	lcd_dclk_freq       = <51>;
+	lcd_hbp             = <140>;
+	lcd_ht              = <1344>;
+	lcd_hspw            = <20>;
+	lcd_vbp             = <20>;
+	lcd_vt              = <635>;
+	lcd_vspw            = <3>;
+		
+	lcd_pwm_used        = <1>;
+	lcd_pwm_ch          = <9>;
+	lcd_pwm_freq        = <500>;
+	lcd_pwm_pol         = <1>;
+
+	/* part 5 */
+	lcd_frm = <1>;
+	lcd_io_phase = <0x0000>;
+	lcd_gamma_en = <0>;
+	lcd_cmap_en = <0>;
+	lcd_hv_clk_phase = <0>;
+	lcd_hv_sync_polarity= <0>;
+				
+	/* part 6 */
+	lcd_power = "vcc-lcd";
+	lcd_pin_power = "vcc-pd";
+	pinctrl-0 = <&rgb18_pins_a>;
+	pinctrl-1 = <&rgb18_pins_b>;
+};
+
+/*
 &lcd0 {
 	base_config_start   = <1>;
 	lcd_used            = <1>;
@@ -1738,7 +1811,7 @@
 	pinctrl-1           = <&dsi4lane_pins_b>;
 	base_config_end     = <1>;
 };
-
+*/
 /* &lcd0 {
  *         base_config_start   = <1>;
  *         lcd_used            = <1>;
@@ -1805,12 +1878,13 @@
 };
 
 &twi2 {
+/*
 	status = "okay";
 	ctp@14 {
 		compatible = "allwinner,gsl3680";
 		device_type = "ctp";
 		reg = <0x40>;
-		status = "okay";
+		status = "disabled";
 		ctp_name = "gslX680_3680";
 		ctp_twi_id = <0x2>;
 		ctp_twi_addr = <0x40>;
@@ -1821,12 +1895,12 @@
 		ctp_exchange_x_y_flag = <0x1>;
 		ctp_int_port = <&pio PH 7 6 1 3 0xffffffff>;
 		ctp_wakeup   = <&pio PH 8 1 1 3 0xffffffff>;
-		/*ctp-supply = <&reg_aldo2>;*/
-		/*ctp_power_ldo = <&reg_dldo1>;*/
-		/*ctp_power_ldo_vol = <3300>;*/
+		//ctp-supply = <&reg_aldo2>;
+		//ctp_power_ldo = <&reg_dldo1>;
+		//ctp_power_ldo_vol = <3300>;
 	};
-
-	/*
+*/
+/*
 	goodix {
 		status = "okay";
 		compatible = "goodix,gt911";
@@ -1837,6 +1911,26 @@
 		touchscreen-size-y = <720>;
 	};
 	*/
+	ctp@14 {
+                compatible = "allwinner,gsl3680";
+                device_type = "ctp";
+                reg = <0x14>;
+                status = "okay";
+                ctp_name = "gt9xxnew_ts";
+                ctp_twi_id = <0x2>;
+                ctp_twi_addr = <0x14>;
+                ctp_screen_max_x = <0x400>;
+                ctp_screen_max_y = <0x258>;
+                ctp_revert_x_flag = <0x0>;
+                ctp_revert_y_flag = <0x0>;
+                ctp_exchange_x_y_flag = <0x0>;
+                ctp_int_port = <&pio PH 7 6 1 3 0xffffffff>;
+                ctp_wakeup   = <&pio PH 8 1 1 3 0xffffffff>;
+                //ctp-supply = <&reg_aldo2>;
+                //ctp_power_ldo = <&reg_dldo1>;
+                //ctp_power_ldo_vol = <3300>;
+        };
+
 };
 
 /{

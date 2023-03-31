@@ -1,0 +1,3 @@
+#KERNEL=="mmcblk[0-9]p[0-9]", RUN+="/etc/udev/hotplug-tf.sh %k $env{ACTION}"
+#ACTION=="add", KERNEL=="mmc0:*", RUN+="/etc/udev/hotplug-tf.sh %k $env{ACTION}"
+#ACTION=="remove", KERNEL=="mmc0:*", RUN+="/etc/udev/hotplug-tf.sh %k $env{ACTION}"

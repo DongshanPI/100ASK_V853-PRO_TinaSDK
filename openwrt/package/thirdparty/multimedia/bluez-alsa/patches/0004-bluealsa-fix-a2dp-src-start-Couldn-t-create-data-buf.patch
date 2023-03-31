@@ -1,0 +1,33 @@
+From 672e2f84e0e55560bbf23b5e0e999005cc5fb20e Mon Sep 17 00:00:00 2001
+From: hongjiasen <hongjiasen@Allwinnertech.com>
+Date: Thu, 6 Jan 2022 16:47:06 +0800
+Subject: [PATCH] bluealsa: fix a2dp src start Couldn't create data buffer.
+
+Signed-off-by: hongjiasen <hongjiasen@Allwinnertech.com>
+---
+ src/a2dp-sbc.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/a2dp-sbc.c b/src/a2dp-sbc.c
+index ade820c..a100fdd 100644
+--- a/src/a2dp-sbc.c
++++ b/src/a2dp-sbc.c
+@@ -79,6 +79,15 @@ static void *a2dp_sbc_enc_thread(struct ba_transport_thread *th) {
+ #if DEBUG
+ 	sbc_print_internals(&sbc);
+ #endif
++	int ii = 1;
++	for(ii = 1 ;ii <= 100 ; ii++){
++		if(t->mtu_write <= 0){
++			usleep(100 * 1000);
++			error(" wait t->mtu_write timer number : %d",ii);
++		} else{
++			break;
++		}
++	}
+ 
+ 	/* Writing MTU should be big enough to contain RTP header, SBC payload
+ 	 * header and at least one SBC frame. In general, there is no constraint
+-- 
+2.29.0
+

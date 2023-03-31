@@ -1,0 +1,35 @@
+Index: alsa-lib-1.1.4.1/src/pcm/pcm_rate.c
+===================================================================
+--- alsa-lib-1.1.4.1.orig/src/pcm/pcm_rate.c
++++ alsa-lib-1.1.4.1/src/pcm/pcm_rate.c
+@@ -718,8 +718,28 @@ static int snd_pcm_rate_commit_area(snd_
+ 			snd_pcm_rate_write_areas1(pcm, areas, appl_offset, rate->sareas, 0);
+ 			goto __partial;
+ 		}
+-		snd_pcm_rate_write_areas1(pcm, areas, appl_offset,
+-					  slave_areas, slave_offset);
++
++		if (slave_frames < rate->gen.slave->period_size) {
++			/*
++			* slave_frames is less than slave period_size, only happens on drain function
++			* do convert with period size and store into rate->sareas
++			* rate->sareas:
++			* |---------------------------|------------------------------|
++			* 0     (actual data)      slave_size    (silence data)   period_size
++			*/
++			printf("[%s] slave ps=%u,f=%u,ofs=%u\n", __func__,
++				rate->gen.slave->period_size, slave_frames, slave_offset);
++			snd_pcm_rate_write_areas1(pcm, areas, appl_offset, rate->sareas, 0);
++			/* only copy slave_size into slave_areas */
++			snd_pcm_areas_copy(slave_areas, slave_offset,
++				rate->sareas, 0,
++				pcm->channels, slave_size,
++				rate->gen.slave->format);
++		} else {
++			snd_pcm_rate_write_areas1(pcm, areas, appl_offset,
++				slave_areas, slave_offset);
++		}
++
+ 		result = snd_pcm_mmap_commit(rate->gen.slave, slave_offset, slave_size);
+ 		if (result < (snd_pcm_sframes_t)slave_size) {
+ 			if (result < 0)

@@ -1,0 +1,26 @@
+From a7a2988202f7b9730c72e7953c552e01fb40cc78 Mon Sep 17 00:00:00 2001
+From: luwinkey <luwinkey@allwinnertech.com>
+Date: Wed, 30 Dec 2020 16:32:10 +0800
+Subject: [PATCH] fix compile errors after enabling enable debug.
+
+Signed-off-by: luwinkey <luwinkey@allwinnertech.com>
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 85def19..7e2c2a7 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -36,7 +36,7 @@ AC_ARG_ENABLE([debug],
+ 	AS_HELP_STRING([--enable-debug], [enable debugging support]))
+ AM_CONDITIONAL([ENABLE_DEBUG], [test "x$enable_debug" = "xyes"])
+ AM_COND_IF([ENABLE_DEBUG], [
+-	AC_CHECK_LIB([SegFault], [backtrace])
++	AC_CHECK_LIB([backtrace])
+ 	AC_DEFINE([DEBUG], [1], [Define to 1 if the debugging is enabled.])
+ ])
+ AC_ARG_ENABLE([debug-time],
+--
+2.29.0
+

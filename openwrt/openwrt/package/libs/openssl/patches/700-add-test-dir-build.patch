@@ -1,0 +1,12 @@
+diff -Naur openssl-1.1.1n/Configure openssl-1.1.1n-nnn/Configure
+--- openssl-1.1.1n/Configure	2022-04-18 13:55:42.578552138 +0800
++++ openssl-1.1.1n-nnn/Configure	2022-04-18 14:14:06.170571985 +0800
+@@ -318,7 +318,7 @@
+ my $default_ranlib;
+ 
+ # Top level directories to build
+-$config{dirs} = [ "crypto", "ssl", "engines", "apps", "util", "tools" ];
++$config{dirs} = [ "crypto", "ssl", "engines", "apps", "test", "util", "tools" ];
+ # crypto/ subdirectories to build
+ $config{sdirs} = [
+     "objects",

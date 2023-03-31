@@ -1,0 +1,51 @@
+From 60973ca99e4ac2289f1eff9d0148449c78537a0f Mon Sep 17 00:00:00 2001
+From: luwinkey <luwinkey@allwinnertech.com>
+Date: Sat, 15 May 2021 14:00:42 +0800
+Subject: [PATCH] optimize the xr829 bt open time.
+
+Signed-off-by: luwinkey <luwinkey@allwinnertech.com>
+---
+ tools/hciattach_xradio.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/tools/hciattach_xradio.c b/tools/hciattach_xradio.c
+index 50591da..02bfaae 100644
+--- a/tools/hciattach_xradio.c
++++ b/tools/hciattach_xradio.c
+@@ -1531,7 +1531,7 @@ int xradio_init(int fd, int def_speed, int speed, struct termios *ti,
+ 
+ 	if (upio_set_bluetooth_power(UPIO_BT_POWER_OFF))
+ 		return -1;
+-	usleep(500000);
++	usleep(20000);
+ 
+ 	if (upio_set_bluetooth_power(UPIO_BT_POWER_ON))
+ 		return -1;
+@@ -1540,7 +1540,7 @@ int xradio_init(int fd, int def_speed, int speed, struct termios *ti,
+ 	upio_init();
+ 	upio_set_btwake(LPM_BT_WAKE_POLARITY);
+ 	upio_set(UPIO_LPM_MODE, UPIO_DEASSERT, 0);
+-	usleep(50000);
++	usleep(5000);
+ 
+ 	if (userial_sync(fd))
+ 		return -1;
+@@ -1551,12 +1551,12 @@ int xradio_init(int fd, int def_speed, int speed, struct termios *ti,
+ 	if (load_btfirmware(fd) < 0)
+ 		return -1;
+ 
+-	usleep(50000);
++	usleep(5000);
+ 
+ 	userial_vendor_set_baud(fd, def_speed);
+-	usleep(100000);
++	usleep(10000);
+ 	userial_vendor_set_hw_fctrl(fd, 1);
+-	usleep(100000);
++	usleep(10000);
+ 
+ 	if (g_startup_reset_flag) {
+ 		printf("[%s] send reset cmd...\n", __FUNCTION__);
+-- 
+2.29.0
+

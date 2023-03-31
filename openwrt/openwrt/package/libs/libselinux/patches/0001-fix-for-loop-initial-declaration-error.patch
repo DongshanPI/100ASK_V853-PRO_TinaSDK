@@ -1,0 +1,21 @@
+diff -Naur libselinux-3.2/utils/getseuser.c libselinux-3.2-new/utils/getseuser.c
+--- libselinux-3.2/utils/getseuser.c	2021-03-04 23:42:59.000000000 +0800
++++ libselinux-3.2-new/utils/getseuser.c	2022-04-16 12:12:21.101103085 +0800
+@@ -9,7 +9,7 @@
+ {
+ 	char *seuser = NULL, *level = NULL;
+ 	char **contextlist;
+-	int rc, n;
++	int rc, n, i;
+ 
+ 	if (argc != 3) {
+ 		fprintf(stderr, "usage:  %s linuxuser fromcon\n", argv[0]);
+@@ -50,7 +50,7 @@
+ 	if (n == 0)
+ 		printf("no valid context found\n");
+ 
+-	for (int i = 0; i < n; i++)
++	for (i = 0; i < n; i++)
+ 		printf("Context %d\t%s\n", i, contextlist[i]);
+ 
+ 	freeconary(contextlist);

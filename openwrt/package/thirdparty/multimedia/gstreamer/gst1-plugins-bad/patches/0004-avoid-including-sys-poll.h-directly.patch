@@ -1,0 +1,29 @@
+From 7a36a1c5c81fffb76a5489d7eca39d3a24d0927e Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Mon, 19 Jul 2021 10:42:38 +0800
+Subject: [PATCH 4/5] avoid including <sys/poll.h> directly
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ sys/dvb/gstdvbsrc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 sys/dvb/gstdvbsrc.c
+
+diff --git a/sys/dvb/gstdvbsrc.c b/sys/dvb/gstdvbsrc.c
+old mode 100644
+new mode 100755
+index d9bee26..2edd9fa
+--- a/sys/dvb/gstdvbsrc.c
++++ b/sys/dvb/gstdvbsrc.c
+@@ -97,7 +97,7 @@
+ #include <gst/gst.h>
+ #include <gst/glib-compat-private.h>
+ #include <sys/ioctl.h>
+-#include <sys/poll.h>
++#include <poll.h>
+ #include <fcntl.h>
+ #include <errno.h>
+ #include <stdio.h>
+-- 
+2.29.0
+

@@ -1,0 +1,52 @@
+From 9cb0db29d50414e6adee655ff7da8def93fbbacf Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Thu, 15 Jul 2021 14:37:41 +0800
+Subject: [PATCH 01/12] no translations
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ Makefile.am  | 2 --
+ configure.ac | 1 -
+ 2 files changed, 3 deletions(-)
+ mode change 100644 => 100755 Makefile.am
+ mode change 100644 => 100755 configure.ac
+
+diff --git a/Makefile.am b/Makefile.am
+old mode 100644
+new mode 100755
+index 21cdb5e..cade98b
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -13,7 +13,6 @@ SUBDIRS = 			\
+ 	tools 			\
+ 	tests 			\
+ 	docs			\
+-	po 			\
+ 	common 			\
+ 	m4
+ 
+@@ -24,7 +23,6 @@ DIST_SUBDIRS = 			\
+ 	gst sys ext		\
+ 	tools 			\
+ 	tests 			\
+-	po 			\
+ 	common 			\
+ 	m4
+ 
+diff --git a/configure.ac b/configure.ac
+old mode 100644
+new mode 100755
+index d6392bc..0cd0153
+--- a/configure.ac
++++ b/configure.ac
+@@ -1044,7 +1044,6 @@ docs/Makefile
+ docs/libs/Makefile
+ docs/plugins/Makefile
+ docs/version.entities
+-po/Makefile.in
+ common/Makefile
+ common/m4/Makefile
+ m4/Makefile
+-- 
+2.29.0
+

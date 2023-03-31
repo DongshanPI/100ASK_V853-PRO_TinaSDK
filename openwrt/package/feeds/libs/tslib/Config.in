@@ -1,0 +1,165 @@
+if PACKAGE_tslib
+
+config TSLIB_ENABLE_input
+	bool "Generic input raw module"
+	default y
+	help
+		Building for generic input raw module (Linux /dev/input/eventN)
+
+config TSLIB_ENABLE_debounce
+	bool "Debounce filter module"
+	default n
+	help
+		Building of debounce filter
+
+config TSLIB_ENABLE_dejitter
+	bool "Dejitter filter module"
+	default y
+	help
+		Building of dejitter filter
+
+config TSLIB_ENABLE_iir
+	bool "IIR filter module"
+	default n
+	help
+		Building of IIR filter
+
+config TSLIB_ENABLE_linear
+	bool "Linear scaling module"
+	default y
+	help
+		Building of linear scaling
+
+config TSLIB_ENABLE_median
+	bool "Median filter module"
+	default n
+	help
+		Building of median filter
+
+config TSLIB_ENABLE_pthres
+	bool "Pthres filter module"
+	default y
+	help
+		Building of pthres filter
+
+config TSLIB_ENABLE_skip
+	bool "Skip filter module"
+	default n
+	help
+		Building of skip filter
+
+config TSLIB_ENABLE_lowpass
+	bool "Lowpass filter module"
+	default n
+	help
+		Building of lowpass filter
+
+config TSLIB_ENABLE_invert
+	bool "Invert filter module"
+	default n
+	help
+		Building of invert filter
+
+config TSLIB_ENABLE_variance
+	bool "Variance filter module"
+	default y
+	help
+		Building of variance filter
+
+config TSLIB_ENABLE_tatung
+	bool "Tatung filter module"
+	default n
+	help
+		Building of tatung raw module (Tatung Webpad support)
+
+config TSLIB_ENABLE_touchkit
+	bool "Touchkit filter module"
+	default n
+	help
+		Building of serial TouchKit raw module (Linux /dev/ttySX support)
+
+config TSLIB_ENABLE_waveshare
+	bool "Waveshare filter module"
+	default n
+	help
+		Building of WaveShare raw module (Linux /dev/hidrawN support)
+
+config TSLIB_ENABLE_ucb1x00
+	bool "Ucb1x00 filter module"
+	default n
+	help
+		Building of ucb1x00 raw module (UCB1x00 support)
+
+config TSLIB_ENABLE_mk712
+	bool "Mk712 filter module"
+	default n
+	help
+		Building of mk712 raw module (Hi tachi support)
+
+config TSLIB_ENABLE_h3600
+	bool "H3600 filter module"
+	default n
+	help
+		Building of h3600 raw module (HP iPaq H3600 support)
+
+config TSLIB_ENABLE_dmc
+	bool "Dmc filter module"
+	default n
+	help
+		Building of dmc raw module (HP iPaq DMC support)
+
+config TSLIB_ENABLE_linear-h2200
+	bool "Liner-h2200 filter module"
+	default n
+	help
+		Building of linearizing filter for iPAQ h2200
+
+config TSLIB_ENABLE_corgi
+	bool "Corgi filter module"
+	default n
+	help
+		Building of corgi raw module (Sharp Zaurus sl-c7x0 support)
+
+config TSLIB_ENABLE_collie
+	bool "Collie raw module"
+	default n
+	help
+		Building of collie raw module (Sharp Zaurus sl-5500/5000d support)
+
+config TSLIB_ENABLE_arctic2
+	bool "Arctic2 raw module"
+	default n
+	help
+	Building of arctic2 raw module (IBM Arctic II support)
+
+config TSLIB_ENABLE_dmc_dus3000
+	bool "Dmc_dus3000 raw module"
+	default n
+	help
+		Building of dmc_dus3000 raw module (DMC DUS Series support)
+
+config TSLIB_ENABLE_cy8mrln-palmpre
+	bool "cy8mrln-palmpre"
+	default n
+	help
+		Building of cy8mrln-palmpre raw module
+
+config TSLIB_ENABLE_galax
+	bool "Galax raw module"
+	default n
+	help
+		Building of HID USB eGalax raw module (Linux /dev/hiddevN support)
+
+config TSLIB_ENABLE_tests
+	bool "Compiling tests program"
+	default n
+	help
+		Select it to compile the tests program for tslib
+
+config TSLIB_ENABLE_tools
+	bool "Tools program (ts_uinput)"
+	default n
+	help
+		Wheter enable the tools
+
+endif

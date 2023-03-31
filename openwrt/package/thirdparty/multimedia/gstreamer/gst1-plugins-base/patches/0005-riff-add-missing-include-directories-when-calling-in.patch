@@ -1,0 +1,27 @@
+From 6d1f9d897f4a8aaab4f61a26c948544bf4e60d9b Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Thu, 15 Jul 2021 15:26:00 +0800
+Subject: [PATCH 06/12] riff: add missing include directories when calling
+ introspection scanner
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ gst-libs/gst/riff/Makefile.am | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/gst-libs/gst/riff/Makefile.am b/gst-libs/gst/riff/Makefile.am
+index ecec07d..cd05290 100755
+--- a/gst-libs/gst/riff/Makefile.am
++++ b/gst-libs/gst/riff/Makefile.am
+@@ -41,6 +41,8 @@ libgstriff_@GST_API_VERSION@_la_LDFLAGS = $(GST_LIB_LDFLAGS) $(GST_ALL_LDFLAGS)
+ #		--strip-prefix=Gst \
+ #		--warn-all \
+ #		--c-include "gst/riff/riff.h" \
++#		-I$(top_srcdir)/gst-libs \
++#		-I$(top_builddir)/gst-libs \
+ #		--add-include-path=$(builddir)/../tag \
+ #		--add-include-path=$(builddir)/../audio \
+ #		--add-include-path=$(PKG_CONFIG_SYSROOT_DIR)`PKG_CONFIG_PATH="$(GST_PKG_CONFIG_PATH)" $(PKG_CONFIG) --variable=girdir gstreamer-@GST_API_VERSION@` \
+-- 
+2.29.0
+

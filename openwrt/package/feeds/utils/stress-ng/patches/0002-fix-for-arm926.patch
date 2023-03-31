@@ -1,0 +1,28 @@
+diff --git a/stress-ng.h b/stress-ng.h
+index d2a4c5e..61d62c4 100644
+--- a/stress-ng.h
++++ b/stress-ng.h
+@@ -775,6 +775,23 @@
+ 
+ #include "stress-version.h"
+ 
++/* The following are optional in C99, so define them if they aren't yet */
++#ifndef FE_DIVBYZERO
++#define FE_DIVBYZERO 0
++#endif
++#ifndef FE_INEXACT
++#define FE_INEXACT 0
++#endif
++#ifndef FE_INVALID
++#define FE_INVALID 0
++#endif
++#ifndef FE_OVERFLOW
++#define FE_OVERFLOW 0
++#endif
++#ifndef FE_UNDERFLOW
++#define FE_UNDERFLOW 0
++#endif
++
+ /*
+  *  BeagleBoneBlack with 4.1.15 kernel does not
+  *  define the following, these should be defined

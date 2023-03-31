@@ -1,0 +1,53 @@
+if PACKAGE_libuapi
+
+choice
+prompt "Choose display framework"
+	default SUNXI_DISPLAY_TWO
+	help
+	Select the preferred minigui running mode.
+config SUNXI_DISPLAY_ONE
+	bool "sunxi_display1"
+config SUNXI_DISPLAY_TWO
+	bool "sunxi_display2"
+endchoice
+choice
+prompt "Choose alloc method"
+	default SUNXI_ALLOC_IOMMU
+	help
+	Select how to apply for memory.
+config SUNXI_ALLOC_CMA
+	bool "sunxi_alloc_cma"
+config SUNXI_ALLOC_IOMMU
+	bool "sunxi_alloc_iommu"
+endchoice
+choice
+prompt "Choose layer alloc method"
+	default LUAPI_LAYER_ALLOC_CHN
+	help
+	Select how to apply for layer.
+config LUAPI_LAYER_ALLOC_CHN
+	bool "luapi_layer_alloc_chn"
+config LUAPI_LAYER_ALLOC_LAY
+	bool "luapi_layer_alloc_lay"
+endchoice
+choice
+prompt "Choose display rendering mode"
+	default SUNXI_DISPLAY_DE
+	help
+		Choose display rendering mode, DE or GPU.
+config SUNXI_DISPLAY_DE
+	bool "DE"
+config SUNXI_DISPLAY_GPU
+	bool "GPU"
+	help
+	Define the macro SUNXI_DISPLAY_GPU, use GPU rendering, send the RGBA data
+	after rendering to fb1 display, execute export FRAMEBUFFER=/dev/fb1
+	before executing the program, no longer support DispSetEnable, DispSetSrcRect,
+	DispSetZorder and DispSetIoctl functions.
+
+	Define the macro SUNXI_DISPLAY_GPU and SUNXI_DISPLAY_GPU_BUF, use GPU rendering,
+	send the RGBA data after rendering to layer. No longer support DispSetSrcRect functions.
+	Default use.
+endchoice
+
+endif

@@ -1,0 +1,457 @@
+From 71aa0a2cda548138085858b5a68ade048b1d57d7 Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Thu, 24 Mar 2022 14:00:58 +0800
+Subject: [PATCH] add hcidump expend
+
+---
+ tools/hcidump.c | 372 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 371 insertions(+), 1 deletion(-)
+
+diff --git a/tools/hcidump.c b/tools/hcidump.c
+index 33d429b..4e5647d 100644
+--- a/tools/hcidump.c
++++ b/tools/hcidump.c
+@@ -34,6 +34,10 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <getopt.h>
++#include <stdbool.h>
++#include <time.h>
++#include <signal.h>
++#include <glib.h>
+ #include <poll.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+@@ -64,6 +68,13 @@ static char *dump_file = NULL;
+ static char *pppdump_file = NULL;
+ static char *audio_file = NULL;
+ 
++static int auto_switch;
++static int filesize;
++static int max_num_of_file;
++static GKeyFile *main_conf;
++static GSList *filenames = NULL;
++static char *logpath = NULL;
++
+ struct hcidump_hdr {
+ 	uint16_t	len;
+ 	uint8_t		in;
+@@ -102,6 +113,8 @@ struct pktlog_hdr {
+ } __attribute__ ((packed));
+ #define PKTLOG_HDR_SIZE (sizeof(struct pktlog_hdr))
+ 
++static int open_file(char *file, int mode, unsigned long flags);
++
+ static inline int read_n(int fd, char *buf, int len)
+ {
+ 	int t = 0, w;
+@@ -119,12 +132,37 @@ static inline int read_n(int fd, char *buf, int len)
+ 	return t;
+ }
+ 
++static inline int free_space(void)
++{
++	int n;
++
++	n = g_slist_length(filenames);
++	if (n > 0) {
++		char *filename = g_slist_nth_data(filenames, 0);
++
++		filenames = g_slist_remove(filenames, filename);
++		printf("hcidump: No space, deleting file %s\n", filename);
++		unlink(filename);
++		free(filename);
++		return 1;
++	}
++
++	printf("hcidump: No space\n");
++
++	return 0;
++
++}
++
+ static inline int write_n(int fd, char *buf, int len)
+ {
+ 	int t = 0, w;
+ 
+ 	while (len > 0) {
+ 		if ((w = write(fd, buf, len)) < 0) {
++			if (errno == ENOSPC)
++				if (free_space())
++					continue;
++
+ 			if (errno == EINTR || errno == EAGAIN)
+ 				continue;
+ 			return -1;
+@@ -136,6 +174,93 @@ static inline int write_n(int fd, char *buf, int len)
+ 	return t;
+ }
+ 
++void print(gpointer filename, gpointer nul)
++{
++	printf("\t\t%s\n", (char *)filename);
++}
++
++static void check_filesize(int *fd)
++{
++	int ret;
++	struct stat stat_;
++
++	ret = access(dump_file, F_OK);
++	if (ret < 0) { /* File doesn't exist */
++		int newfd;
++		int try = 3;
++		unsigned int count;
++
++		printf("Access file error");
++		close(*fd);
++
++		while (try > 0) {
++			newfd = open_file(dump_file, WRITE, DUMP_BTSNOOP);
++			if (newfd > 0) {
++				*fd = newfd;
++				return;
++			}
++			/* Remove one log file */
++			count = g_slist_length(filenames);
++			if (count > 0) {
++				char *name = g_slist_nth_data(filenames, 0);
++				filenames = g_slist_remove(filenames, name);
++				printf("Delete %s\n", name);
++				unlink(name);
++				free(name);
++			} else {
++				*fd = -1;
++				return;
++			}
++			try--;
++		}
++		*fd = -1;
++		return;
++	} else {
++		ret = stat(dump_file, &stat_);
++		if (ret < 0)
++			printf("stat error");
++	}
++
++	if (stat_.st_size > 1024 * filesize) {
++		/* rename, close the original fd, return a new fd */
++		char to_name[128];
++		char basename[64];
++		char buff[64];
++		time_t now;
++		struct tm *tm;
++		int tmpfd, n, ret;
++
++		printf("hcidump: file full to switch\n");
++		bzero(basename, sizeof(basename));
++		strncpy(basename, dump_file, strlen(dump_file) - 4);
++
++		now = time(NULL);
++		tm = gmtime(&now);
++		strftime(buff, sizeof(buff), "%Y%m%d_%H%M%S", tm);
++		snprintf(to_name, 128, "%s_%s.cfa", basename, buff);
++
++		close(*fd);
++		ret = rename(dump_file, to_name);
++		if (ret)
++			printf("rename error: ");
++
++		n = g_slist_length(filenames);
++		if ( n + 1 < max_num_of_file ) {
++			filenames = g_slist_append(filenames, (gpointer)strdup(to_name));
++		} else {
++			char *filename = g_slist_nth_data(filenames, 0);
++			filenames = g_slist_remove(filenames, filename);
++			printf("deleting file %s\n", filename);
++			unlink(filename);
++			filenames = g_slist_append(filenames, (gpointer)strdup(to_name));
++			free(filename);
++		}
++
++		tmpfd = open_file(dump_file, WRITE, DUMP_BTSNOOP);
++		*fd = tmpfd;
++	}
++}
++
+ static int process_frames(int dev, int sock, int fd, unsigned long flags)
+ {
+ 	struct cmsghdr *cmsg;
+@@ -266,6 +391,9 @@ static int process_frames(int dev, int sock, int fd, unsigned long flags)
+ 				perror("Write error");
+ 				return -1;
+ 			}
++			/* check if filesize exceeds */
++			if(auto_switch == 1)
++				check_filesize(&fd);
+ 			break;
+ 
+ 		default:
+@@ -667,6 +795,237 @@ static struct option main_options[] = {
+ 	{ 0 }
+ };
+ 
++static const char * const supported_options[] = {
++	"AutoSwitch",
++	"FileName",
++	"FileSize",
++	"MaxNumberOfFile",
++	"Path"
++};
++static GKeyFile *load_config(const char *file)
++{
++	GError *err = NULL;
++	GKeyFile *keyfile;
++
++	keyfile = g_key_file_new();
++
++	g_key_file_set_list_separator(keyfile, ',');
++
++	if (!g_key_file_load_from_file(keyfile, file, 0, &err)) {
++		printf("loading key file: %s failed\n", file);
++		g_key_file_free(keyfile);
++		return NULL;
++	}
++
++	return keyfile;
++}
++
++static void check_config(GKeyFile *config)
++{
++	const char *valid_groups[] = { "General", NULL };
++	char **keys;
++	int i;
++
++	if (!config)
++		return;
++
++	keys = g_key_file_get_groups(config, NULL);
++
++	for (i = 0; keys != NULL && keys[i] != NULL; i++) {
++		const char **group;
++		bool match = false;
++
++		for (group = valid_groups; *group; group++) {
++			if (g_str_equal(keys[i], *group)) {
++				match = true;
++				break;
++			}
++		}
++
++		if (!match)
++			fprintf(stderr, "Unknown group %s in btsnoop.conf", keys[i]);
++	}
++
++	g_strfreev(keys);
++
++	keys = g_key_file_get_keys(config, "General", NULL, NULL);
++
++	for (i = 0; keys != NULL && keys[i] != NULL; i++) {
++		bool found;
++		unsigned int j;
++
++		found = false;
++		for (j = 0; j < G_N_ELEMENTS(supported_options); j++) {
++			if (g_str_equal(keys[i], supported_options[j])) {
++				found = true;
++				break;
++			}
++		}
++
++		if (!found)
++			fprintf(stderr, "Unknown key %s in btsnoop.conf", keys[i]);
++	}
++
++	g_strfreev(keys);
++}
++
++static void parse_config(GKeyFile *config)
++{
++	GError *err = NULL;
++	char *str;
++	int val;
++
++	if (!config)
++		return;
++
++	check_config(config);
++
++	val = g_key_file_get_integer(config, "General", "AutoSwitch", &err);
++	if (err) {
++		printf("%s\n", err->message);
++		g_clear_error(&err);
++		printf("No Switch option, exit\n");
++		exit(0);
++	} else {
++		auto_switch = val;
++		if (auto_switch == 0)
++			// Quit
++			exit(0);
++		if (auto_switch == 1);
++			mode = WRITE;
++		printf("hcidump auto switch = %d\n", auto_switch);
++	}
++
++	str = g_key_file_get_string(config, "General", "FileName", &err);
++	if (err) {
++		printf("%s\n", err->message);
++		g_clear_error(&err);
++	} else {
++		printf("Filename = %s\n", str);
++		dump_file = strdup(str);
++	}
++
++	val = g_key_file_get_integer(config, "General", "FileSize", &err);
++	if (err) {
++		printf("%s\n", err->message);
++		g_clear_error(&err);
++	} else {
++		printf("MAX Filesize = %d\n", val);
++		filesize = val;
++	}
++
++	val = g_key_file_get_integer(config, "General", "MaxNumberOfFile", &err);
++	if (err) {
++		printf("%s\n", err->message);
++		g_clear_error(&err);
++	} else {
++		printf("MaxNumberOfFile = %d\n", val);
++		max_num_of_file = val;
++	}
++
++	str = g_key_file_get_string(config, "General", "Path", &err);
++	if (err) {
++		printf("%s\n", err->message);
++		g_clear_error(&err);
++	} else {
++		printf("Path = %s\n", str);
++		logpath = strdup(str);
++	}
++}
++
++void sig_handler()
++{
++	char to_name[128];
++	char basename[64];
++	char buff[64];
++	time_t now;
++	struct tm *tm;
++	int tmpfd, n, ret;
++
++	bzero(basename, sizeof(basename));
++	strncpy(basename, dump_file, strlen(dump_file) - 4);
++
++	now = time(NULL);
++	tm = gmtime(&now);
++	strftime(buff, sizeof(buff), "%Y%m%d_%H%M%S", tm);
++	snprintf(to_name, 128, "%s_%s.cfa", basename, buff);
++
++	printf("\nName changed to %s\n", to_name);
++	ret = rename(dump_file, to_name);
++	if (ret)
++		printf("rename error: ");
++	exit(0);
++}
++
++gint filename_cmp(gconstpointer filename1, gconstpointer filename2)
++{
++	return g_ascii_strcasecmp(filename1, filename2);
++}
++
++void populate_filenames()
++{
++	DIR *dir;
++	struct dirent *entry;
++
++	dir = opendir(logpath);
++	if (!dir) {
++		printf("Unable to open %s, reason: %s\n", logpath, strerror(errno));
++		return;
++	}
++
++	while((entry = readdir(dir)) != NULL) {
++		if(!strncmp(entry->d_name, dump_file, strlen(dump_file) - 4)) {
++			if(!strcmp(entry->d_name, dump_file)) {
++				/* "btsnoop_hci.cfa" from last log record */
++				/* rename it */
++				char to_name[128];
++				char basename[64];
++				char buff[64];
++				time_t now;
++				struct tm *tm;
++				int tmpfd, n, ret;
++
++				bzero(basename, sizeof(basename));
++				strncpy(basename, dump_file, strlen(dump_file) - 4);
++
++				now = time(NULL);
++				tm = gmtime(&now);
++				strftime(buff, sizeof(buff), "%Y%m%d_%H%M%S", tm);
++				snprintf(to_name, 128, "%s_%s.cfa", basename, buff);
++
++				printf("original %s changed to %s\n", entry->d_name, to_name);
++				ret = rename(dump_file, to_name);
++				if (ret)
++					printf("rename error: ");
++
++				filenames = g_slist_insert_sorted(filenames, (gpointer)strdup(to_name), filename_cmp);
++				// g_slist_foreach(filenames, print, NULL);
++				continue;
++			}
++			// printf("original %s\n", entry->d_name);
++			filenames = g_slist_insert_sorted(filenames, (gpointer)strdup(entry->d_name), filename_cmp);
++			// g_slist_foreach(filenames, print, NULL);
++
++			if(g_slist_length(filenames) + 1 >  max_num_of_file) {
++				char *s = g_slist_nth_data(filenames, 0);
++				unlink(s);
++				filenames = g_slist_remove(filenames, s);
++				free(s);
++			}
++		}
++	}
++}
++static void init_defaults(void)
++{
++	auto_switch = 0;
++	dump_file = "btsnoop_hci.cfa";
++	filesize = 5120; /* KB */
++	max_num_of_file = 2;
++	filenames = NULL;
++	logpath = "/tmp";
++	mode = WRITE;
++}
++
+ int main(int argc, char *argv[])
+ {
+ 	unsigned long flags = 0;
+@@ -678,7 +1037,7 @@ int main(int argc, char *argv[])
+ 	uint16_t obex_port;
+ 
+ 	while ((opt = getopt_long(argc, argv,
+-				"i:l:p:m:w:r:taxXRC:H:O:P:S:D:A:Yhv",
++				"i:l:p:m:w:r:taxXRC:H:O:P:S:D:A:Yhvz",
+ 				main_options, NULL)) != -1) {
+ 		switch(opt) {
+ 		case 'i':
+@@ -770,6 +1129,17 @@ int main(int argc, char *argv[])
+ 			printf("%s\n", VERSION);
+ 			exit(0);
+ 
++		case 'z':
++			signal(SIGINT, sig_handler);
++			signal(SIGTERM, sig_handler);
++			init_defaults();
++			main_conf = load_config(CONFIGDIR "/btsnoop.conf");
++			if (!main_conf) return 0;
++			parse_config(main_conf);
++			chdir(logpath);
++			populate_filenames();
++			break;
++
+ 		case 'h':
+ 		default:
+ 			usage();
+-- 
+2.29.0
+

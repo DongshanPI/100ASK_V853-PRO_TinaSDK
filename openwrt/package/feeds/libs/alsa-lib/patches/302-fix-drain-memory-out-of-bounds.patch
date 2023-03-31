@@ -1,0 +1,43 @@
+Index: alsa-lib-1.1.4.1/src/pcm/pcm_rate.c
+===================================================================
+--- alsa-lib-1.1.4.1.orig/src/pcm/pcm_rate.c
++++ alsa-lib-1.1.4.1/src/pcm/pcm_rate.c
+@@ -719,7 +719,22 @@ static int snd_pcm_rate_commit_area(snd_pcm_t *pcm, snd_pcm_rate_t *rate,
+ 			goto __partial;
+ 		}
+ 
+-		if (slave_frames < rate->gen.slave->period_size) {
++		if (slave_frames < rate->gen.slave->period_size &&
++			cont < pcm->period_size) {
++			printf("[%s] src ps=%u,cont=%u,slave ps=%u,f=%u\n", __func__,
++				pcm->period_size, cont, rate->gen.slave->period_size, slave_frames);
++			snd_pcm_areas_copy(rate->pareas, 0,
++				areas, appl_offset,
++				pcm->channels, size,
++				pcm->format);
++
++			snd_pcm_rate_write_areas1(pcm, rate->pareas, 0, rate->sareas, 0);
++
++			snd_pcm_areas_copy(slave_areas, slave_offset,
++				rate->sareas, 0,
++				pcm->channels, slave_size,
++				rate->gen.slave->format);
++		} else if (slave_frames < rate->gen.slave->period_size) {
+ 			/*
+ 			* slave_frames is less than slave period_size, only happens on drain function
+ 			* do convert with period size and store into rate->sareas
+@@ -735,6 +750,14 @@ static int snd_pcm_rate_commit_area(snd_pcm_t *pcm, snd_pcm_rate_t *rate,
+ 				rate->sareas, 0,
+ 				pcm->channels, slave_size,
+ 				rate->gen.slave->format);
++		} else if (cont < pcm->period_size) {
++			printf("[%s] src ps=%u,cont=%u\n", __func__,
++				pcm->period_size, cont);
++			snd_pcm_areas_copy(rate->pareas, 0,
++				areas, appl_offset,
++				pcm->channels, size,
++				pcm->format);
++			snd_pcm_rate_write_areas1(pcm, rate->pareas, 0, slave_areas, slave_offset);
+ 		} else {
+ 			snd_pcm_rate_write_areas1(pcm, areas, appl_offset,
+ 				slave_areas, slave_offset);

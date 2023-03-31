@@ -1,0 +1,6 @@
+menuconfig TINATEST_BASE_WIFI
+    bool "wifi"
+
+if TINATEST_BASE_WIFI
+    source "base_func/Config.in"
+endif

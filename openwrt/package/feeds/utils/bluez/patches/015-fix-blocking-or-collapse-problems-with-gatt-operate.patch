@@ -1,0 +1,452 @@
+From cc13b14ba7510967ca9435bacba5f740d0948524 Mon Sep 17 00:00:00 2001
+From: caizepeng <caizepeng@allwinnertech.com>
+Date: Wed, 8 Dec 2021 17:03:30 +0800
+Subject: [PATCH] fix blocking or collapse problems with gatt operate.
+
+Signed-off-by: caizepeng <caizepeng@allwinnertech.com>
+---
+ src/shared/att.c         |  41 ++++++++++----
+ src/shared/io-mainloop.c |  16 +++---
+ src/shared/queue.c       | 119 +++++++++++++++++++++++++++++++++------
+ 3 files changed, 141 insertions(+), 35 deletions(-)
+
+diff --git a/src/shared/att.c b/src/shared/att.c
+index 948a554..8f60b40 100644
+--- a/src/shared/att.c
++++ b/src/shared/att.c
+@@ -197,6 +197,7 @@ static uint8_t get_req_opcode(uint8_t rsp_opcode)
+ }
+ 
+ struct att_send_op {
++	unsigned int h1;
+ 	unsigned int id;
+ 	unsigned int timeout_id;
+ 	enum att_op_type type;
+@@ -504,8 +505,9 @@ static bool can_write_data(struct io *io, void *user_data)
+ 	struct timeout_data *timeout;
+ 
+ 	op = pick_next_send_op(chan);
+-	if (!op)
++	if (!op) {
+ 		return false;
++	}
+ 
+ 	if (!bt_att_chan_write(chan, op->opcode, op->pdu, op->len)) {
+ 		if (op->callback)
+@@ -554,23 +556,28 @@ static void wakeup_chan_writer(void *data, void *user_data)
+ 	struct bt_att_chan *chan = data;
+ 	struct bt_att *att = chan->att;
+ 
+-	if (chan->writer_active)
++	if (chan->writer_active) {
++		util_debug(att->debug_callback, att->debug_data, "ATT write active true");
+ 		return;
+-
++	}
+ 	/* Set the write handler only if there is anything that can be sent
+ 	 * at all.
+ 	 */
+ 	if (queue_isempty(chan->queue) && queue_isempty(att->write_queue)) {
+ 		if ((chan->pending_req || queue_isempty(att->req_queue)) &&
+-			(chan->pending_ind || queue_isempty(att->ind_queue)))
+-			return;
++			(chan->pending_ind || queue_isempty(att->ind_queue))) {
++				util_debug(att->debug_callback, att->debug_data, "ATT queue is empty");
++				return;
++		}
+ 	}
+-
++	chan->writer_active = true;
+ 	if (!io_set_write_handler(chan->io, can_write_data, chan,
+-							write_watch_destroy))
++							write_watch_destroy)) {
++		util_debug(att->debug_callback, att->debug_data, "ATT set write error");
++		chan->writer_active = false;
+ 		return;
++	}
+ 
+-	chan->writer_active = true;
+ }
+ 
+ static void wakeup_writer(struct bt_att *att)
+@@ -1057,6 +1064,7 @@ static bool can_read_data(struct io *io, void *user_data)
+ 		handle_notify(chan, opcode, pdu + 1, bytes_read - 1);
+ 		break;
+ 	}
++	util_debug(att->debug_callback, att->debug_data, "ATT op type2 0x%02x", get_op_type(opcode));
+ 
+ 	bt_att_unref(att);
+ 
+@@ -1471,17 +1479,21 @@ unsigned int bt_att_send(struct bt_att *att, uint8_t opcode,
+ 	struct att_send_op *op;
+ 	bool result;
+ 
+-	if (!att || queue_isempty(att->chans))
++	if (!att || queue_isempty(att->chans)) {
++		util_debug(att->debug_callback, att->debug_data, "ATT io error");
+ 		return 0;
++	}
+ 
+ 	op = create_att_send_op(att, opcode, pdu, length, callback, user_data,
+ 								destroy);
+-	if (!op)
++	if (!op) {
++		util_debug(att->debug_callback, att->debug_data, "ATT op error");
+ 		return 0;
++	}
+ 
+ 	if (att->next_send_id < 1)
+ 		att->next_send_id = 1;
+-
++	op->h1 = 0xFFFF;
+ 	op->id = att->next_send_id++;
+ 
+ 	/* Add the op to the correct queue based on its type */
+@@ -1503,12 +1515,19 @@ unsigned int bt_att_send(struct bt_att *att, uint8_t opcode,
+ 	}
+ 
+ 	if (!result) {
++		util_debug(att->debug_callback, att->debug_data,
++					"att op result:%d, type:%d", result, op->type);
+ 		free(op->pdu);
+ 		free(op);
+ 		return 0;
+ 	}
+ 
+ 	wakeup_writer(att);
++	if(op->h1 == 0) {
++		util_debug(att->debug_callback, att->debug_data,
++					"type:%d, op->id:%d", op->type, op->id);
++		return att->next_send_id - 1;
++	}
+ 
+ 	return op->id;
+ }
+diff --git a/src/shared/io-mainloop.c b/src/shared/io-mainloop.c
+index 2306c34..a1aa5d7 100644
+--- a/src/shared/io-mainloop.c
++++ b/src/shared/io-mainloop.c
+@@ -247,18 +247,20 @@ bool io_set_write_handler(struct io *io, io_callback_func_t callback,
+ 	if (io->write_destroy)
+ 		io->write_destroy(io->write_data);
+ 
+-	if (callback)
++	if (callback) {
+ 		events = io->events | EPOLLOUT;
+-	else
++	}
++	else {
+ 		events = io->events & ~EPOLLOUT;
++	}
+ 
+ 	io->write_callback = callback;
+ 	io->write_destroy = destroy;
+ 	io->write_data = user_data;
+-
++#if 0
+ 	if (events == io->events)
+ 		return true;
+-
++#endif
+ 	if (mainloop_modify_fd(io->fd, events) < 0)
+ 		return false;
+ 
+@@ -290,10 +292,10 @@ bool io_set_disconnect_handler(struct io *io, io_callback_func_t callback,
+ 	if (events == io->events)
+ 		return true;
+ 
+-	if (mainloop_modify_fd(io->fd, events) < 0)
+-		return false;
+-
+ 	io->events = events;
++	if (mainloop_modify_fd(io->fd, events) < 0) {
++		return false;
++	}
+ 
+ 	return true;
+ }
+diff --git a/src/shared/queue.c b/src/shared/queue.c
+index 60df111..c61f19e 100644
+--- a/src/shared/queue.c
++++ b/src/shared/queue.c
+@@ -27,14 +27,41 @@
+ 
+ #include "src/shared/util.h"
+ #include "src/shared/queue.h"
++#include <pthread.h>
++
++#define QUEUE_SIMPLE_THREAD_SAFE 1
+ 
+ struct queue {
+ 	int ref_count;
+ 	struct queue_entry *head;
+ 	struct queue_entry *tail;
+ 	unsigned int entries;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	pthread_mutex_t mutex; //zipadd
++    // pthread_cond_t cond; //zipadd
++	pthread_mutexattr_t attr; //zipadd
++#endif
+ };
+ 
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++static inline int queue_mutex_lock(struct queue *queue)
++{
++	int ret = 0;
++	if ((ret = pthread_mutex_lock(&queue->mutex)) != 0) {
++        return ret;
++    }
++	return 0;
++}
++
++static inline int queue_mutex_unlock(struct queue *queue)
++{
++	int ret = 0;
++    if ((ret = pthread_mutex_unlock(&queue->mutex)) != 0) {
++    }
++	return 0;
++}
++#endif
++
+ static struct queue *queue_ref(struct queue *queue)
+ {
+ 	if (!queue)
+@@ -58,6 +85,11 @@ struct queue *queue_new(void)
+ 	struct queue *queue;
+ 
+ 	queue = new0(struct queue, 1);
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	pthread_mutexattr_init(&(queue->attr));
++	pthread_mutexattr_settype(&(queue->attr),PTHREAD_MUTEX_RECURSIVE);
++	pthread_mutex_init(&(queue->mutex),&(queue->attr));
++#endif
+ 	queue->head = NULL;
+ 	queue->tail = NULL;
+ 	queue->entries = 0;
+@@ -71,7 +103,12 @@ void queue_destroy(struct queue *queue, queue_destroy_func_t destroy)
+ 		return;
+ 
+ 	queue_remove_all(queue, NULL, NULL, destroy);
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	if(pthread_mutex_destroy(&(queue->mutex)) != 0) {
++	}
++	if(pthread_mutexattr_destroy(&(queue->attr)) != 0) {
++	}
++#endif
+ 	queue_unref(queue);
+ }
+ 
+@@ -91,7 +128,9 @@ bool queue_push_tail(struct queue *queue, void *data)
+ 
+ 	if (!queue)
+ 		return false;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 	entry = queue_entry_new(data);
+ 
+ 	if (queue->tail)
+@@ -103,6 +142,9 @@ bool queue_push_tail(struct queue *queue, void *data)
+ 		queue->head = entry;
+ 
+ 	queue->entries++;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 
+ 	return true;
+ }
+@@ -113,7 +155,9 @@ bool queue_push_head(struct queue *queue, void *data)
+ 
+ 	if (!queue)
+ 		return false;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 	entry = queue_entry_new(data);
+ 
+ 	entry->next = queue->head;
+@@ -124,7 +168,9 @@ bool queue_push_head(struct queue *queue, void *data)
+ 		queue->tail = entry;
+ 
+ 	queue->entries++;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 	return true;
+ }
+ 
+@@ -136,7 +182,9 @@ bool queue_push_after(struct queue *queue, void *entry, void *data)
+ 
+ 	if (!queue)
+ 		return false;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 	for (tmp = queue->head; tmp; tmp = tmp->next) {
+ 		if (tmp->data == entry) {
+ 			qentry = tmp;
+@@ -144,19 +192,29 @@ bool queue_push_after(struct queue *queue, void *entry, void *data)
+ 		}
+ 	}
+ 
+-	if (!qentry)
++	if (!qentry) {
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++		queue_mutex_unlock(queue);
++#endif
+ 		return false;
++	}
+ 
+ 	new_entry = queue_entry_new(data);
+ 
+ 	new_entry->next = qentry->next;
+ 
+-	if (!qentry->next)
++	if (!qentry->next) {
+ 		queue->tail = new_entry;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++		queue_mutex_unlock(queue);
++#endif
++	}
+ 
+ 	qentry->next = new_entry;
+ 	queue->entries++;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 	return true;
+ }
+ 
+@@ -167,6 +225,9 @@ void *queue_pop_head(struct queue *queue)
+ 
+ 	if (!queue || !queue->head)
+ 		return NULL;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 
+ 	entry = queue->head;
+ 
+@@ -180,7 +241,9 @@ void *queue_pop_head(struct queue *queue)
+ 
+ 	free(entry);
+ 	queue->entries--;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 	return data;
+ }
+ 
+@@ -211,7 +274,9 @@ void queue_foreach(struct queue *queue, queue_foreach_func_t function,
+ 	entry = queue->head;
+ 	if (!entry)
+ 		return;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 	queue_ref(queue);
+ 	while (entry && queue->head && queue->ref_count > 1) {
+ 		struct queue_entry *next;
+@@ -221,6 +286,9 @@ void queue_foreach(struct queue *queue, queue_foreach_func_t function,
+ 		entry = next;
+ 	}
+ 	queue_unref(queue);
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ }
+ 
+ static bool direct_match(const void *a, const void *b)
+@@ -252,7 +320,9 @@ bool queue_remove(struct queue *queue, void *data)
+ 
+ 	if (!queue)
+ 		return false;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 	for (entry = queue->head, prev = NULL; entry;
+ 					prev = entry, entry = entry->next) {
+ 		if (entry->data != data)
+@@ -268,10 +338,14 @@ bool queue_remove(struct queue *queue, void *data)
+ 
+ 		free(entry);
+ 		queue->entries--;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++		queue_mutex_unlock(queue);
++#endif
+ 		return true;
+ 	}
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 	return false;
+ }
+ 
+@@ -282,6 +356,9 @@ void *queue_remove_if(struct queue *queue, queue_match_func_t function,
+ 
+ 	if (!queue)
+ 		return NULL;
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 
+ 	if (!function)
+ 		function = direct_match;
+@@ -304,14 +381,18 @@ void *queue_remove_if(struct queue *queue, queue_match_func_t function,
+ 
+ 			free(entry);
+ 			queue->entries--;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 			return data;
+ 		} else {
+ 			prev = entry;
+ 			entry = entry->next;
+ 		}
+ 	}
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 	return NULL;
+ }
+ 
+@@ -323,7 +404,9 @@ unsigned int queue_remove_all(struct queue *queue, queue_match_func_t function,
+ 
+ 	if (!queue)
+ 		return 0;
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_lock(queue);
++#endif
+ 	entry = queue->head;
+ 
+ 	if (function) {
+@@ -357,7 +440,9 @@ unsigned int queue_remove_all(struct queue *queue, queue_match_func_t function,
+ 			count++;
+ 		}
+ 	}
+-
++#ifdef QUEUE_SIMPLE_THREAD_SAFE
++	queue_mutex_unlock(queue);
++#endif
+ 	return count;
+ }
+ 
+-- 
+2.29.0
+

@@ -1,0 +1,13 @@
+Index: procd-2021-03-08-2cfc26f8/watchdog.c
+===================================================================
+--- procd-2021-03-08-2cfc26f8.orig/watchdog.c
++++ procd-2021-03-08-2cfc26f8/watchdog.c
+@@ -30,7 +30,7 @@
+ 
+ static struct uloop_timeout wdt_timeout;
+ static int wdt_fd = -1;
+-static int wdt_drv_timeout = 30;
++static int wdt_drv_timeout = 15;
+ static int wdt_frequency = 5;
+ static bool wdt_magicclose = false;
+ 

@@ -1,0 +1,89 @@
+Index: busybox-1.33.2/init/halt.c
+===================================================================
+--- busybox-1.33.2.orig/init/halt.c
++++ busybox-1.33.2/init/halt.c
+@@ -94,6 +94,53 @@
+ #include "libbb.h"
+ #include "reboot.h"
+ 
++
++#define LOGE(...) fprintf(stderr, "E:" __VA_ARGS__)
++static const char *RTC_SYSFS_FLAG = "/sys/devices/platform/soc/rtc/flag";
++static const char *RTC_SYSFS_FLAG_V2 = "/sys/devices/platform/soc@3000000/7090000.rtc/flag";
++
++/* force the next boot to recovery/efex */
++static int write_rtc_flag(const char *reason)
++{
++	int ret;
++	FILE* f;
++	int count;
++
++	ret = access(RTC_SYSFS_FLAG, F_OK); //mode:F_OK
++	if(ret == -1)
++	{
++		ret = access(RTC_SYSFS_FLAG_V2, F_OK); //mode:F_OK
++		if(ret == -1)
++		{
++			LOGE("can not access %s\n", RTC_SYSFS_FLAG);
++			LOGE("can not access %s\n", RTC_SYSFS_FLAG_V2);
++			return 0;
++		}
++
++		f = fopen(RTC_SYSFS_FLAG_V2, "wb");
++	}
++	else
++	{
++		f = fopen(RTC_SYSFS_FLAG, "wb");
++	}
++
++	if (f == NULL) {
++		LOGE("Can't open %s\n(%s)\n", RTC_SYSFS_FLAG, strerror(errno));
++		return -1;
++	}
++	count = fprintf(f, "%s\n", reason);
++	if (count == -1) {
++		LOGE("Failed writing %s\n(%s)\n", RTC_SYSFS_FLAG, strerror(errno));
++		return -1;
++	}
++	/* fflush(f); */
++	if (fclose(f) != 0) {
++		LOGE("Failed closing %s\n(%s)\n", RTC_SYSFS_FLAG, strerror(errno));
++		return -1;
++	}
++	return 0;
++}
++
+ #if ENABLE_FEATURE_WTMP
+ #include <sys/utsname.h>
+ 
+@@ -173,6 +220,30 @@ int halt_main(int argc UNUSED_PARAM, cha
+ 
+ 	int delay = 0;
+ 	int which, flags, rc;
++	int argc_index = 0;
++	char rtc_cmd[][20] = {
++		"debug",
++		"efex",
++		"boot-resignature",
++		"recovery",
++		"boot-recovery",
++		"sysrecovery",
++		"bootloader",
++		"usb-recovery",
++		"uboot"
++	};
++
++	for(argc_index = 0; argc_index < argc; argc_index++) {
++		int rtc_writed = -1;
++		for(int i = 0; i < sizeof(rtc_cmd)/sizeof(rtc_cmd[0]); i++){
++			if(strcmp(argv[argc_index], rtc_cmd[i]) == 0){
++				printf("write rtc: %s\n", rtc_cmd[i]);
++				rtc_writed = write_rtc_flag(rtc_cmd[i]);
++				break;
++			}
++		}
++		if(rtc_writed == 0) break;
++	}
+ 
+ 	/* Figure out which applet we're running */
+ 	if (ENABLE_HALT && !ENABLE_POWEROFF && !ENABLE_REBOOT)

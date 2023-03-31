@@ -1,0 +1,44 @@
+From bc15b24fb499b779ba36f6ccaa7311eb1b3acb56 Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Thu, 15 Jul 2021 16:36:07 +0800
+Subject: [PATCH 1/6] no translations
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ Makefile.am  | 1 -
+ configure.ac | 1 -
+ 2 files changed, 2 deletions(-)
+ mode change 100644 => 100755 Makefile.am
+ mode change 100644 => 100755 configure.ac
+
+diff --git a/Makefile.am b/Makefile.am
+old mode 100644
+new mode 100755
+index 12cb59a..6db3d2c
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -4,7 +4,6 @@ ALWAYS_SUBDIRS =		\
+ 	gst sys ext 		\
+ 	tests			\
+ 	docs			\
+-	po			\
+ 	common			\
+ 	m4			\
+ 	pkgconfig
+diff --git a/configure.ac b/configure.ac
+old mode 100644
+new mode 100755
+index cb9e60a..fcc517d
+--- a/configure.ac
++++ b/configure.ac
+@@ -1296,7 +1296,6 @@ sys/osxvideo/Makefile
+ sys/v4l2/Makefile
+ sys/waveform/Makefile
+ sys/ximage/Makefile
+-po/Makefile.in
+ tests/Makefile
+ tests/check/Makefile
+ tests/examples/Makefile
+-- 
+2.29.0
+

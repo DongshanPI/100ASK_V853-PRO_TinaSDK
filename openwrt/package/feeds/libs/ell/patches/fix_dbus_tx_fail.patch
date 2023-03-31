@@ -1,0 +1,214 @@
+diff --git a/ell/dbus.c b/ell/dbus.c
+index 5664f85..1501d9c 100755
+--- a/ell/dbus.c
++++ b/ell/dbus.c
+@@ -331,11 +331,12 @@ static uint32_t send_message(struct l_dbus *dbus, bool priority,
+ 	callback->user_data = user_data;
+ 
+ 	if (priority) {
++        l_io_lock(dbus->io);
+ 		l_queue_push_head(dbus->message_queue, callback);
+ 
+ 		l_io_set_write_handler(dbus->io, message_write_handler,
+ 							dbus, NULL);
+-
++        l_io_unlock(dbus->io);
+ 		return callback->serial;
+ 	}
+ 
+@@ -343,11 +344,15 @@ static uint32_t send_message(struct l_dbus *dbus, bool priority,
+ 	if (path)
+ 		_dbus_object_tree_signals_flush(dbus, path);
+ 
++
++    l_io_lock(dbus->io);
+ 	l_queue_push_tail(dbus->message_queue, callback);
+ 
+ 	if (dbus->is_ready)
+ 		l_io_set_write_handler(dbus->io, message_write_handler,
+ 							dbus, NULL);
++    l_io_unlock(dbus->io);
++
+ 
+ 	return callback->serial;
+ }
+@@ -1206,6 +1211,13 @@ LIB_EXPORT struct l_dbus *l_dbus_new_default(enum l_dbus_bus bus)
+ 	return setup_address(address);
+ }
+ 
++LIB_EXPORT void l_dbus_new_mutex(struct l_dbus *dbus)
++{
++	if (unlikely(!dbus))
++		return;
++    l_io_new_mutex(dbus->io);
++}
++
+ LIB_EXPORT void l_dbus_destroy(struct l_dbus *dbus)
+ {
+ 	if (unlikely(!dbus))
+diff --git a/ell/ell.sym b/ell/ell.sym
+index b8f3730..72fdc18 100755
+--- a/ell/ell.sym
++++ b/ell/ell.sym
+@@ -185,6 +185,7 @@ global:
+ 	l_dbus_property_changed;
+ 	l_dbus_new;
+ 	l_dbus_new_default;
++	l_dbus_new_mutex;
+ 	l_dbus_destroy;
+ 	l_dbus_set_ready_handler;
+ 	l_dbus_set_disconnect_handler;
+diff --git a/ell/io.c b/ell/io.c
+index 878060c..20a79cf 100755
+--- a/ell/io.c
++++ b/ell/io.c
+@@ -31,6 +31,8 @@
+ #include "util.h"
+ #include "io.h"
+ #include "private.h"
++#include "log.h"
++#include <pthread.h>
+ 
+ /**
+  * SECTION:io
+@@ -60,6 +62,8 @@ struct l_io {
+ 	l_io_debug_cb_t debug_handler;
+ 	l_io_destroy_cb_t debug_destroy;
+ 	void *debug_data;
++    pthread_mutex_t *p_mutex;
++    pthread_mutexattr_t attr;
+ };
+ 
+ static void io_cleanup(void *user_data)
+@@ -68,6 +72,13 @@ static void io_cleanup(void *user_data)
+ 
+ 	l_util_debug(io->debug_handler, io->debug_data, "cleanup <%p>", io);
+ 
++    if(io->p_mutex)
++    {
++        pthread_mutex_destroy(io->p_mutex);
++        l_free(io->p_mutex);
++        io->p_mutex = NULL;
++    }
++
+ 	if (io->write_destroy)
+ 		io->write_destroy(io->write_data);
+ 
+@@ -100,6 +111,13 @@ static void io_closed(struct l_io *io)
+ 	io->disconnect_destroy = NULL;
+ 	io->disconnect_data = NULL;
+ 
++    if(io->p_mutex)
++    {
++        pthread_mutex_destroy(io->p_mutex);
++        l_free(io->p_mutex);
++        io->p_mutex = NULL;
++    }
++
+ 	if (handler)
+ 		handler(io, disconnect_data);
+ 
+@@ -143,6 +161,8 @@ static void io_callback(int fd, uint32_t events, void *user_data)
+ 	}
+ 
+ 	if ((events & EPOLLOUT) && io->write_handler) {
++        l_io_lock(io);
++
+ 		l_util_debug(io->debug_handler, io->debug_data,
+ 						"write event <%p>", io);
+ 
+@@ -160,9 +180,11 @@ static void io_callback(int fd, uint32_t events, void *user_data)
+ 				io->close_on_destroy = false;
+ 				watch_clear(io->fd);
+ 				io_closed(io);
++                l_io_unlock(io);
+ 				return;
+ 			}
+ 		}
++        l_io_unlock(io);
+ 	}
+ }
+ 
+@@ -197,6 +219,48 @@ LIB_EXPORT struct l_io *l_io_new(int fd)
+ 	return io;
+ }
+ 
++void l_io_new_mutex(struct l_io *io)
++{
++	if (unlikely(!io))
++		return;
++
++    if(io->p_mutex)
++        return;
++
++    io->p_mutex = l_new(pthread_mutex_t, 1);
++
++    if(io->p_mutex == NULL)
++        return ;
++
++    pthread_mutexattr_init(&io->attr);
++    pthread_mutexattr_settype(&io->attr,PTHREAD_MUTEX_RECURSIVE);
++    pthread_mutex_init(io->p_mutex,&io->attr);
++}
++
++void l_io_lock(struct l_io *io)
++{
++	if (unlikely(!io))
++		return;
++
++    if(io->p_mutex)
++    {
++        pthread_mutex_lock(io->p_mutex);
++    }
++
++}
++
++void l_io_unlock(struct l_io *io)
++{
++	if (unlikely(!io))
++		return;
++
++    if(io->p_mutex)
++    {
++        pthread_mutex_unlock(io->p_mutex);
++    }
++
++}
++
+ /**
+  * l_io_destroy:
+  * @io: IO object
+@@ -337,11 +401,14 @@ LIB_EXPORT bool l_io_set_write_handler(struct l_io *io, l_io_write_cb_t callback
+ 	io->write_handler = callback;
+ 	io->write_destroy = destroy;
+ 	io->write_data = user_data;
+-
+-	if (events == io->events)
+-		return true;
+-
+-	err = watch_modify(io->fd, events, false);
++	if((io->p_mutex == NULL)&&(events == io->events))
++	{
++	   return true;
++	}
++	if(io->p_mutex)
++		err = watch_modify(io->fd, events, true);
++	else
++		err = watch_modify(io->fd, events, false);
+ 	if (err)
+ 		return false;
+ 
+diff --git a/ell/io.h b/ell/io.h
+index 0689d08..8a3ce43 100755
+--- a/ell/io.h
++++ b/ell/io.h
+@@ -39,6 +39,9 @@ typedef void (*l_io_disconnect_cb_t) (struct l_io *io, void *user_data);
+ typedef void (*l_io_destroy_cb_t) (void *user_data);
+ 
+ struct l_io *l_io_new(int fd);
++void l_io_new_mutex(struct l_io *io);
++void l_io_lock(struct l_io *io);
++void l_io_unlock(struct l_io *io);
+ void l_io_destroy(struct l_io *io);
+ 
+ int l_io_get_fd(struct l_io *io);

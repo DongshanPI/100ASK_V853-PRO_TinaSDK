@@ -1,0 +1,28 @@
+config WMG_PROTOCOL_SOFTAP
+	bool "CONFIG_WMG_PROTOCOL_SOFTAP"
+	depends on PACKAGE_wifimanager-demo
+	default n
+	help
+		softap net config.
+
+config WMG_PROTOCOL_BLE
+	bool "CONFIG_WMG_PROTOCOL_BLE"
+	depends on PACKAGE_wifimanager-demo
+	select PACKAGE_btmanager
+	default n
+	help
+		ble net config.
+
+config WMG_PROTOCOL_XCONFIG
+	bool "CONFIG_WMG_PROTOCOL_XCONFIG"
+	depends on PACKAGE_wifimanager-demo
+	default n
+	help
+		xconfig net config.
+
+config WMG_PROTOCOL_SOUNDWAVE
+	bool "CONFIG_WMG_PROTOCOL_SOUNDWAVE"
+	depends on PACKAGE_wifimanager-demo
+	default n
+	help
+		soundwave net config.

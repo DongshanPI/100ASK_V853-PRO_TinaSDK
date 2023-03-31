@@ -1,0 +1,29 @@
+From 56e2406dcc4ba691754ff6fd18a70b4c36b1e2f7 Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Thu, 15 Jul 2021 15:55:56 +0800
+Subject: [PATCH 09/12] glimagesink wayland initial window position
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ gst-libs/gst/gl/wayland/gstglwindow_wayland_egl.c | 2 ++
+ 1 file changed, 2 insertions(+)
+ mode change 100644 => 100755 gst-libs/gst/gl/wayland/gstglwindow_wayland_egl.c
+
+diff --git a/gst-libs/gst/gl/wayland/gstglwindow_wayland_egl.c b/gst-libs/gst/gl/wayland/gstglwindow_wayland_egl.c
+old mode 100644
+new mode 100755
+index a02aae4..523c719
+--- a/gst-libs/gst/gl/wayland/gstglwindow_wayland_egl.c
++++ b/gst-libs/gst/gl/wayland/gstglwindow_wayland_egl.c
+@@ -701,6 +701,8 @@ gst_gl_window_wayland_egl_set_render_rectangle (GstGLWindow * window,
+   render->rect.w = width;
+   render->rect.h = height;
+ 
++  wl_shell_surface_set_window_position(window_egl->window.shell_surface, x, y);
++
+   gst_gl_window_send_message_async (window,
+       (GstGLWindowCB) _set_render_rectangle, render,
+       (GDestroyNotify) _free_set_render_rectangle);
+-- 
+2.29.0
+

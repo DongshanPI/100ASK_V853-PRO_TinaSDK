@@ -1,0 +1,15 @@
+menuconfig TINATEST_BASE_DISPLAY
+    bool "display"
+
+if TINATEST_BASE_DISPLAY
+    source "displyiftester/Config.in"
+    source "capturetester/Config.in"
+    source "fbshottester/Config.in"
+    source "directfbtester/Config.in"
+    source "tslibtester/Config.in"
+    source "tplayertester/Config.in"
+    source "g2d_bld_dmabuftester/Config.in"
+    source "g2d_fill_dmabuftester/Config.in"
+    source "g2d_lbc_rottester/Config.in"
+    source "g2d_mixer_tasktester/Config.in"
+endif

@@ -1,0 +1,28 @@
+
+
+SSV_CMD_FILE=""
+ssv_phy=""
+phy_dirs="/sys/class/ieee80211/*"
+
+for phy_dir in $phy_dirs; do
+	if [ ! -d ${phy_dir}/device/driver ]; then
+		exit 1;
+	fi
+	drv_name=`ls ${phy_dir}/device/driver/ | grep SV6`
+
+	if [ ${drv_name} ]; then
+		ssv_phy=${phy_dir##*/};
+		break;
+	fi
+done
+
+# excute CLI
+if [ ${ssv_phy} ]; then
+	SSV_CMD_FILE=/proc/ssv/${ssv_phy}/ssv_cmd
+	if [ -f $SSV_CMD_FILE ]; then
+		echo "$*" > $SSV_CMD_FILE
+		cat $SSV_CMD_FILE
+	fi
+else 
+	echo "can't find SSV_CMD_FILE"
+fi

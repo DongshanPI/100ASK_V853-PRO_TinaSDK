@@ -1,0 +1,17 @@
+--- sign.py	2022-04-21 13:38:43.997838174 +0800
++++ sign-new.py	2022-04-21 13:38:39.553838094 +0800
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # SPDX-License-Identifier: BSD-2-Clause
+ #
+ # Copyright (c) 2015, 2017, Linaro Limited
+@@ -129,7 +129,7 @@
+     if pad == 0 :
+         pad = padSize
+ 
+-    data = data + chr(pad) * pad
++    data = data + bytes([pad]) * pad
+     return data
+ 
+ def main():

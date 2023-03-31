@@ -1,0 +1,246 @@
+
+ssv_phy=""
+phy_dirs="/sys/class/ieee80211/*"
+SSV_CMD_FILE=""
+
+for phy_dir in $phy_dirs; do
+    if [ -d ${phy_dir}/device/driver ]; then
+    	ssv_phy=${phy_dir##*/};
+	    break;
+    fi
+done
+
+if [ ${ssv_phy} ]; then
+	SSV_CMD_FILE=/proc/ssv/${ssv_phy}/ssv_cmd
+else 
+	echo "Cannot find SSV and use default phy0!!!"
+	SSV_CMD_FILE=/proc/ssv/phy0/ssv_cmd
+fi
+
+if [ ! -f ${SSV_CMD_FILE} ]; then
+    SSV_CMD_FILE=/proc/tu_ssv/${ssv_phy}/ssv_cmd
+    echo ${SSV_CMD_FILE}
+fi
+
+if [ ! -f ${SSV_CMD_FILE} ]; then
+    echo "Cannot find SSV from " ${SSV_CMD_FILE}
+    exit 1
+else 
+	echo "Find SSV from " ${SSV_CMD_FILE}		
+fi
+
+if [[ $# == 0 ]]; then
+	echo "rf tx"
+	echo "rf rx"
+	echo "rf stop"
+	echo "rf reset"
+	echo "rf count"
+	echo "rf rate"
+	echo "rf sar"
+	echo "rf ch"
+	echo "rf freq"
+	echo "rf rfreq"
+	echo "rf ifs"
+    exit 0
+fi
+
+if [[ ${1} == "tx" ]]; then
+    # Set block mode
+    echo "rf block" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+    # disable ack policy
+    echo "rf ack disable" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+    
+    if [[ $# == 1 ]]; then
+        # set default channel
+        echo "ch 1" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+        # Set default rate
+        echo "rf rate 22" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+
+    elif [[ $# == 2 ]]; then
+        # set channel
+        echo "ch ${2}" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+        # Set default rate
+        echo "rf rate 22" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+
+    elif [[ $# == 3 ]]; then
+        if [[ ${3} == "bw40" ]]; then
+            echo "ch ${2} bw40" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+            
+            # Set default rate
+            echo "rf rate 38" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+
+        else
+            # set channel
+            echo "ch ${2}" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+            # Set default rate
+            echo "rf rate 22" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+        fi
+    else
+        echo "rf tx [ch] [bw40]"
+    fi
+    # txgen
+    echo "rf phy_txgen 0xffffffff" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "rx" ]]; then
+    # Set block mode
+    echo "rf block" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+    # disable ack policy
+    echo "rf ack disable" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+    # Set default channel
+    echo "ch 1" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+    # Reset MIB
+    echo "mib reset" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "stop" ]]; then
+    echo "rf unblock" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "reset" ]]; then
+    echo "mib reset" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "count" ]]; then
+    if [[ $# == 2 ]]; then
+        if [[ ${2} == "0" || ${2} == "1" ]]; then
+            echo "rf count ${2}" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+        else
+            echo "rf count [0|1]"
+        fi
+    else
+        echo "rf count [0|1]"
+    fi
+
+elif [[ ${1} == "rate" ]]; then
+    if [[ $# == 2 ]]; then
+        if [[ ${2} == "list" ]]; then
+            echo "rate index [0]  : 11b, 1M" 
+            echo "rate index [1]  : 11b, 2M,   Long Preamble" 
+            echo "rate index [2]  : 11b, 5.5M, Long Preamble" 
+            echo "rate index [3]  : 11b, 11M,  Long Preamble" 
+            echo "rate index [5]  : 11b, 5.5M, Short Preamble" 
+            echo "rate index [6]  : 11b, 11M,  Short Preamble" 
+            echo "rate index [7]  : 11g, 6M" 
+            echo "rate index [8]  : 11g, 9M" 
+            echo "rate index [9]  : 11g, 12M" 
+            echo "rate index [10] : 11g, 18M" 
+            echo "rate index [11] : 11g, 24M" 
+            echo "rate index [12] : 11g, 36M" 
+            echo "rate index [13] : 11g, 48M" 
+            echo "rate index [14] : 11g, 54M" 
+            echo "rate index [15] : 11n, MCS0, HT20, LGI" 
+            echo "rate index [16] : 11n, MCS1, HT20, LGI" 
+            echo "rate index [17] : 11n, MCS2, HT20, LGI" 
+            echo "rate index [18] : 11n, MCS3, HT20, LGI" 
+            echo "rate index [19] : 11n, MCS4, HT20, LGI" 
+            echo "rate index [20] : 11n, MCS5, HT20, LGI" 
+            echo "rate index [21] : 11n, MCS6, HT20, LGI" 
+            echo "rate index [22] : 11n, MCS7, HT20, LGI" 
+            echo "rate index [23] : 11n, MCS0, HT20, SGI" 
+            echo "rate index [24] : 11n, MCS1, HT20, SGI" 
+            echo "rate index [25] : 11n, MCS2, HT20, SGI" 
+            echo "rate index [26] : 11n, MCS3, HT20, SGI" 
+            echo "rate index [27] : 11n, MCS4, HT20, SGI" 
+            echo "rate index [28] : 11n, MCS5, HT20, SGI" 
+            echo "rate index [29] : 11n, MCS6, HT20, SGI" 
+            echo "rate index [30] : 11n, MCS7, HT20, SGI" 
+            echo "rate index [31] : 11n, MCS0, HT40, LGI" 
+            echo "rate index [32] : 11n, MCS1, HT40, LGI" 
+            echo "rate index [33] : 11n, MCS2, HT40, LGI" 
+            echo "rate index [34] : 11n, MCS3, HT40, LGI" 
+            echo "rate index [35] : 11n, MCS4, HT40, LGI" 
+            echo "rate index [36] : 11n, MCS5, HT40, LGI" 
+            echo "rate index [37] : 11n, MCS6, HT40, LGI" 
+            echo "rate index [38] : 11n, MCS7, HT40, LGI" 
+            echo "rate index [39] : 11n, MCS0, HT40, SGI" 
+            echo "rate index [40] : 11n, MCS1, HT40, SGI" 
+            echo "rate index [41] : 11n, MCS2, HT40, SGI" 
+            echo "rate index [42] : 11n, MCS3, HT40, SGI" 
+            echo "rate index [43] : 11n, MCS4, HT40, SGI" 
+            echo "rate index [44] : 11n, MCS5, HT40, SGI" 
+            echo "rate index [45] : 11n, MCS6, HT40, SGI" 
+            echo "rate index [46] : 11n, MCS7, HT40, SGI" 
+        else
+            echo "rf rate ${2}" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+        fi
+    else
+        echo "rf rate [rateidx]"
+    fi
+
+elif [[ ${1} == "ifs" ]]; then
+    if [[ $# == 2 ]]; then
+        echo "rf ifs ${2}" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+    else
+        echo "rf ifs [value]"
+    fi
+
+elif [[ ${1} == "freq" ]]; then
+    if [[ $# == 2 ]]; then
+        echo "rf freq ${2}" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+    else
+        echo "rf freq [value]"
+    fi
+
+elif [[ ${1} == "rfreq" ]]; then
+    echo "rf rfreq" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "rssi" ]]; then
+    echo "rf rssi" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "sar" ]]; then
+    echo "rf sar" > $SSV_CMD_FILE
+    cat $SSV_CMD_FILE
+
+elif [[ ${1} == "ch" ]]; then
+    
+    if [[ $# == 2 ]]; then
+        echo "ch ${2}" > $SSV_CMD_FILE
+        cat $SSV_CMD_FILE
+    
+    elif [[ $# == 3 ]]; then
+        if [[ ${3} == "bw40" ]]; then
+            echo "ch ${2} bw40" > $SSV_CMD_FILE
+            cat $SSV_CMD_FILE
+        else
+            echo "rf ch [ch] [bw40]"
+        fi
+    else
+        echo "rf ch [ch] [bw40]"
+    fi
+
+else
+	echo "rf tx"
+	echo "rf rx"
+	echo "rf stop"
+	echo "rf reset"
+	echo "rf count"
+	echo "rf rate"
+	echo "rf sar"
+	echo "rf ch"
+	echo "rf freq"
+	echo "rf rfreq"
+	echo "rf ifs"
+fi
+
+# filter kernel message
+echo "0 0 0 0" > /proc/sys/kernel/printk

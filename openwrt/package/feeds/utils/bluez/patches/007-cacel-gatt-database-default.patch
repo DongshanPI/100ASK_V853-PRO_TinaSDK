@@ -1,0 +1,57 @@
+From bbb135aa8671ec85260a4383bae0b9b59e278a1c Mon Sep 17 00:00:00 2001
+From: liumingyuan <liumingyuan@allwinnertech.com>
+Date: Wed, 13 Jan 2021 21:12:26 +0800
+Subject: [PATCH] cacel gatt database default.
+
+Signed-off-by: liumingyuan <liumingyuan@allwinnertech.com>
+---
+ src/adapter.c       | 4 ++--
+ src/gatt-database.c | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/adapter.c b/src/adapter.c
+index 972d887..58f0fd3 100644
+--- a/src/adapter.c
++++ b/src/adapter.c
+@@ -8243,7 +8243,7 @@ static int adapter_register(struct btd_adapter *adapter)
+ 	if (!(adapter->supported_settings & MGMT_SETTING_LE) ||
+ 					main_opts.mode == BT_MODE_BREDR)
+ 		goto load;
+-
++/*
+ 	adapter->database = btd_gatt_database_new(adapter);
+ 	if (!adapter->database) {
+ 		btd_error(adapter->dev_id,
+@@ -8251,7 +8251,7 @@ static int adapter_register(struct btd_adapter *adapter)
+ 		adapters = g_slist_remove(adapters, adapter);
+ 		return -EINVAL;
+ 	}
+-
++*/
+ 	adapter->adv_manager = btd_adv_manager_new(adapter, adapter->mgmt);
+ 
+ 	db = btd_gatt_database_get_db(adapter->database);
+diff --git a/src/gatt-database.c b/src/gatt-database.c
+index c11d14b..49f7355 100644
+--- a/src/gatt-database.c
++++ b/src/gatt-database.c
+@@ -3554,6 +3554,7 @@ struct btd_gatt_database *btd_gatt_database_new(struct btd_adapter *adapter)
+ 	database->ccc_callbacks = queue_new();
+ 
+ 	addr = btd_adapter_get_address(adapter);
++/*
+ 	database->le_io = bt_io_listen(connect_cb, NULL, NULL, NULL, &gerr,
+ 					BT_IO_OPT_SOURCE_BDADDR, addr,
+ 					BT_IO_OPT_SOURCE_TYPE,
+@@ -3566,7 +3567,7 @@ struct btd_gatt_database *btd_gatt_database_new(struct btd_adapter *adapter)
+ 		g_error_free(gerr);
+ 		goto fail;
+ 	}
+-
++*/
+ 	/* If just just 1 channel is enabled EATT is not required */
+ 	if (main_opts.gatt_channels == 1)
+ 		goto bredr;
+-- 
+2.29.0
+

@@ -1,0 +1,55 @@
+From d28599f7bfc3b49e57de0208f1234343a5d4bbce Mon Sep 17 00:00:00 2001
+From: zhuangqiubin <zhuangqiubin@allwinnertech.com>
+Date: Mon, 28 Sep 2020 19:11:36 +0800
+Subject: [PATCH] swupdate: copy_raw_image support file
+
+---
+ handlers/raw_handler.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/handlers/raw_handler.c b/handlers/raw_handler.c
+index 90c81db..540bec1 100644
+--- a/handlers/raw_handler.c
++++ b/handlers/raw_handler.c
+@@ -146,6 +146,7 @@ static int copy_raw_image(struct img_type *img,
+ 	uint32_t checksum;
+ 	unsigned long offset = 0;
+ 	size_t size;
++	struct stat sb;
+ 
+ 	proplist = dict_get_list(&img->properties, "copyfrom");
+ 
+@@ -153,6 +154,19 @@ static int copy_raw_image(struct img_type *img,
+ 		ERROR("MIssing source device, no copyfrom property");
+ 		return -EINVAL;
+ 	}
++	if (lstat(entry->value, &sb) == -1) {
++		TRACE("stat for %s failed: %s", entry->value, strerror(errno));
++		return ret;
++	}
++	if(S_ISBLK(sb.st_mode)) {
++		if (ioctl(fdin, BLKGETSIZE64, &size) < 0) {
++			ERROR("Cannot get size of %s", entry->value);
++			return -EINVAL;
++		}
++	} else {
++		size = sb.st_size;
++	}
++
+ 	fdin = open(entry->value, O_RDONLY);
+ 	if (fdin < 0) {
+ 		TRACE("Device %s cannot be opened: %s",
+@@ -160,10 +174,6 @@ static int copy_raw_image(struct img_type *img,
+ 		return -ENODEV;
+ 	}
+ 
+-	if (ioctl(fdin, BLKGETSIZE64, &size) < 0) {
+-		ERROR("Cannot get size of %s", entry->value);
+-	}
+-
+ 	fdout = open(img->device, O_RDWR);
+ 	if (fdout < 0) {
+ 		TRACE("Device %s cannot be opened: %s",
+-- 
+2.29.0
+

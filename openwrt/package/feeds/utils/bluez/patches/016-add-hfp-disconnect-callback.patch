@@ -1,0 +1,44 @@
+From 3a64ac25acfdea9eb29821a4c7667dde3eb2447c Mon Sep 17 00:00:00 2001
+From: luoyuyi <luoyuyi@allwinnertech.com>
+Date: Mon, 28 Feb 2022 09:37:00 +0800
+Subject: [PATCH] add hfp disconnect callback
+
+---
+ src/profile.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/profile.c b/src/profile.c
+index 192fd02..14a29d3 100644
+--- a/src/profile.c
++++ b/src/profile.c
+@@ -782,7 +782,7 @@ static void ext_io_destroy(gpointer p)
+ 
+ 	g_free(ext_io);
+ }
+-
++static int ext_disconnect_dev(struct btd_service *service);
+ static gboolean ext_io_disconnected(GIOChannel *io, GIOCondition cond,
+ 							gpointer user_data)
+ {
+@@ -796,15 +796,16 @@ static gboolean ext_io_disconnected(GIOChannel *io, GIOCondition cond,
+ 
+ 	bt_io_get(io, &gerr, BT_IO_OPT_DEST, addr, BT_IO_OPT_INVALID);
+ 	if (gerr != NULL) {
+-		error("Unable to get io data for %s: %s",
++		DBG("Unable to get io data for %s: %s",
+ 						ext->name, gerr->message);
+ 		g_error_free(gerr);
+ 		goto drop;
+ 	}
+ 
+-	DBG("%s disconnected from %s", ext->name, addr);
+ drop:
++	DBG("%s disconnected", ext->name);
+ 	if (conn->service) {
++		ext_disconnect_dev(conn->service);
+ 		if (btd_service_get_state(conn->service) ==
+ 						BTD_SERVICE_STATE_CONNECTING)
+ 			btd_service_connecting_complete(conn->service, -EIO);
+-- 
+2.29.0
+

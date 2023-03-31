@@ -1,0 +1,137 @@
+From c633ceb5e73af4f2818280b6701c00f320d1a6da Mon Sep 17 00:00:00 2001
+From: wuhuabin <wuhuabin@allwinnertech.com>
+Date: Thu, 14 Apr 2022 10:16:42 +0800
+Subject: [PATCH] support env redund
+
+Signed-off-by: wuhuabin <wuhuabin@allwinnertech.com>
+---
+ tools/env/fw_env.c | 59 ++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 49 insertions(+), 10 deletions(-)
+
+diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
+index 66cb9d2a..ed56d50b 100644
+--- a/tools/env/fw_env.c
++++ b/tools/env/fw_env.c
+@@ -396,8 +396,15 @@ static char *envmatch(char *s1, char *s2)
+ char *fw_getenv(char *name)
+ {
+ 	char *env, *nxt;
++	for (nxt = environment.data; !(*nxt); ++nxt) {
++		if (nxt >= &environment.data[ENV_SIZE]) {
++			fprintf (stderr, "## Error: "
++				"environment is empty\n");
++			return NULL;
++		}
++	}
+ 
+-	for (env = environment.data; *env; env = nxt + 1) {
++	for (env = nxt; *env; env = nxt + 1) {
+ 		char *val;
+ 
+ 		for (nxt = env; *nxt; ++nxt) {
+@@ -422,8 +429,15 @@ char *fw_getenv(char *name)
+ char *fw_getdefenv(char *name)
+ {
+ 	char *env, *nxt;
++	for (nxt = default_environment; !(*nxt); ++nxt) {
++		if (nxt >= &default_environment[ENV_SIZE]) {
++			fprintf (stderr, "## Error: "
++				"default environment is empty\n");
++			return NULL;
++		}
++	}
+ 
+-	for (env = default_environment; *env; env = nxt + 1) {
++	for (env = nxt; *env; env = nxt + 1) {
+ 		char *val;
+ 
+ 		for (nxt = env; *nxt; ++nxt) {
+@@ -463,7 +477,14 @@ int fw_printenv(int argc, char *argv[], int value_only, struct env_opts *opts)
+ 
+ 	if (argc == 0) {	/* Print all env variables  */
+ 		char *env, *nxt;
+-		for (env = environment.data; *env; env = nxt + 1) {
++		for (nxt = environment.data; !(*nxt); ++nxt) {
++			if (nxt >= &environment.data[ENV_SIZE]) {
++				fprintf (stderr, "## Error: "
++					"environment is empty\n");
++				return -1;
++			}
++		}
++		for (env = nxt; *env; env = nxt + 1) {
+ 			for (nxt = env; *nxt; ++nxt) {
+ 				if (nxt >= &environment.data[ENV_SIZE]) {
+ 					fprintf(stderr, "## Error: "
+@@ -539,7 +560,14 @@ int fw_env_write(char *name, char *value)
+ 	/*
+ 	 * search if variable with this name already exists
+ 	 */
+-	for (nxt = env = environment.data; *env; env = nxt + 1) {
++	for (nxt = environment.data; !(*nxt); ++nxt) {
++		if (nxt >= &environment.data[ENV_SIZE]) {
++			fprintf (stderr, "## Error: "
++				"environment is empty\n");
++			return -1;
++		}
++	}
++	for (env = nxt; *env; env = nxt + 1) {
+ 		for (nxt = env; *nxt; ++nxt) {
+ 			if (nxt >= &environment.data[ENV_SIZE]) {
+ 				fprintf(stderr, "## Error: "
+@@ -618,7 +646,14 @@ int fw_env_write(char *name, char *value)
+ 	/*
+ 	 * Append new definition at the end
+ 	 */
+-	for (env = environment.data; *env || *(env + 1); ++env)
++	for (nxt = environment.data; !(*nxt); ++nxt) {
++		if (nxt >= &environment.data[ENV_SIZE]) {
++			fprintf (stderr, "## Error: "
++				"environment is empty\n");
++			return -1;
++		}
++	}
++	for (env = nxt; *env || *(env + 1); ++env)
+ 		;
+ 	if (env > environment.data)
+ 		++env;
+@@ -1464,6 +1499,9 @@ int fw_env_open(struct env_opts *opts)
+ 		if (!crc0_ok) {
+ 			fprintf(stderr,
+ 				"Warning: Bad CRC, using default environment\n");
++			fprintf (stderr,
++				"Error: Please reboot, uboot will fix the environment\n");
++			return -1;
+ 			memcpy(environment.data, default_environment,
+ 			       sizeof(default_environment));
+ 			environment.dirty = 1;
+@@ -1727,7 +1765,7 @@ static int check_device_config(int dev)
+ 
+ static int parse_config(struct env_opts *opts)
+ {
+-	int rc;
++	int rc, rc_redund;
+ 
+ 	if (!opts)
+ 		opts = &default_opts;
+@@ -1772,13 +1810,14 @@ static int parse_config(struct env_opts *opts)
+ #endif
+ #endif
+ 	rc = check_device_config(0);
+-	if (rc < 0)
+-		return rc;
+ 
+-	if (have_redund_env) {
+-		rc = check_device_config(1);
++	if (!have_redund_env) {
+ 		if (rc < 0)
+ 			return rc;
++	} else {
++		rc_redund = check_device_config(1);
++		if (rc < 0 && rc_redund < 0)
++			return rc;
+ 
+ 		if (ENVSIZE(0) != ENVSIZE(1)) {
+ 			fprintf(stderr,
+-- 
+2.29.0
+

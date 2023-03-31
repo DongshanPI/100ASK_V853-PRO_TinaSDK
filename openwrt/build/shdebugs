@@ -1,0 +1,51 @@
+#!/bin/bash
+
+function shred()
+{
+    echo -e '\033[0;31;1m' $* '\033[0m'
+}
+
+function shgreen()
+{
+    echo -e '\033[0;32;1m' $* '\033[0m'
+}
+
+#function get_char()
+#{
+#	SAVEDSTTY=`stty -g`
+#	stty -echo
+#	stty cbreak
+#	dd if=/dev/tty bs=1 count=1 2> /dev/null
+#	stty -raw
+#	stty echo
+#	stty $SAVEDSTTY
+#}
+
+function shpause()
+{
+	if [ "x$1" != "x" ] ;then
+		echo "$1"
+	fi
+
+	echo "Press any key to continue!"
+#	char=`get_char`
+	read -s -n1
+}
+
+function sherror()
+{
+	echo -e "\033[47;31mERROR: $*\033[0m" >&2
+}
+
+function shwarn()
+{
+	echo -e "\033[47;34mWARN: $*\033[0m"
+}
+
+function shinfo()
+{
+	echo -e "\033[47;30mINFO: $*\033[0m"
+}
+
+
+

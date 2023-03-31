@@ -1,0 +1,86 @@
+From f8d638c4baea773f1f147cf27d88adbe14fc32d0 Mon Sep 17 00:00:00 2001
+From: luwinkey <luwinkey@allwinnertech.com>
+Date: Thu, 6 Jan 2022 10:04:33 +0800
+Subject: [PATCH 1/2] fix set/get vol limited by name length.
+
+Signed-off-by: luwinkey <luwinkey@allwinnertech.com>
+---
+ src/asound/bluealsa-ctl.c | 32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/src/asound/bluealsa-ctl.c b/src/asound/bluealsa-ctl.c
+index 6cffd66..b7bf22e 100644
+--- a/src/asound/bluealsa-ctl.c
++++ b/src/asound/bluealsa-ctl.c
+@@ -112,6 +112,23 @@ static int str2bdaddr(const char *str, bdaddr_t *ba) {
+ 	return 0;
+ }
+ 
++char *string_left_cut(char *dst, char *src, int n)
++{
++	char *p = src;
++	char *q = dst;
++	int len = strlen(src);
++
++	if (n > len)
++		n = len;
++
++	while(n--)
++		*(q++) = *(p++);
++
++	*(q++)='\0';
++
++	return dst;
++}
++
+ static int bluealsa_bt_dev_cmp(const void *p1, const void *p2) {
+ 	const struct bt_dev *d1 = *(const struct bt_dev **)p1;
+ 	const struct bt_dev *d2 = *(const struct bt_dev **)p2;
+@@ -292,6 +309,9 @@ static void bluealsa_elem_set_name(struct ctl_elem *elem, const char *name, int
+ 		const int name_len = strlen(name);
+ 		int len = sizeof(elem->name) - 16 - 1;
+ 		char no[16] = "";
++		char control_name[21] = {0};
++
++		string_left_cut(control_name, name, 20);
+ 
+ 		if (id != -1) {
+ 			sprintf(no, " #%u", id);
+@@ -300,9 +320,9 @@ static void bluealsa_elem_set_name(struct ctl_elem *elem, const char *name, int
+ 
+ 		if (elem->type == CTL_ELEM_TYPE_BATTERY) {
+ 			len = MIN(len - 10, name_len);
+-			while (isspace(name[len - 1]))
++			while (isspace(control_name[len - 1]))
+ 				len--;
+-			sprintf(elem->name, "%.*s%s | Battery", len, name, no);
++			sprintf(elem->name, "%.*s%s | Battery", len, control_name, no);
+ 		}
+ 		else {
+ 			/* avoid name duplication by adding profile suffixes */
+@@ -310,18 +330,18 @@ static void bluealsa_elem_set_name(struct ctl_elem *elem, const char *name, int
+ 			case BA_PCM_TRANSPORT_A2DP_SOURCE:
+ 			case BA_PCM_TRANSPORT_A2DP_SINK:
+ 				len = MIN(len - 7, name_len);
+-				while (isspace(name[len - 1]))
++				while (isspace(control_name[len - 1]))
+ 					len--;
+-				sprintf(elem->name, "%.*s%s - A2DP", len, name, no);
++				sprintf(elem->name, "%.*s%s - A2DP", len, control_name, no);
+ 				break;
+ 			case BA_PCM_TRANSPORT_HFP_AG:
+ 			case BA_PCM_TRANSPORT_HFP_HF:
+ 			case BA_PCM_TRANSPORT_HSP_AG:
+ 			case BA_PCM_TRANSPORT_HSP_HS:
+ 				len = MIN(len - 6, name_len);
+-				while (isspace(name[len - 1]))
++				while (isspace(control_name[len - 1]))
+ 					len--;
+-				sprintf(elem->name, "%.*s%s - SCO", len, name, no);
++				sprintf(elem->name, "%.*s%s - SCO", len, control_name, no);
+ 				break;
+ 			}
+ 		}
+-- 
+2.29.0
+

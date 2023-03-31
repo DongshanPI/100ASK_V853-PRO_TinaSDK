@@ -1,0 +1,28 @@
+From 4f78ad13847c3dcf4992033e1093b5dd83a0d23b Mon Sep 17 00:00:00 2001
+From: xuqiang <xuqiang@allwinnertech.com>
+Date: Fri, 30 Apr 2021 10:02:18 +0800
+Subject: [PATCH] suspport to build it
+
+Signed-off-by: xuqiang <xuqiang@allwinnertech.com>
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 587f896..4122f7b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -371,8 +371,8 @@ all: makeconfig
+ #  Load in and set flags based on config
+ #
+ -include config
+-CFLAGS += $(CONFIG_CFLAGS)
+-LDFLAGS += $(CONFIG_LDFLAGS)
++CFLAGS += $(CONFIG_CFLAGS) $(TARGET_CFLAGS)
++LDFLAGS += $(CONFIG_LDFLAGS) $(TARGET_LDFLAGS)
+ OBJS += $(CONFIG_OBJS)
+ 
+ .SUFFIXES: .c .o
+-- 
+2.29.0
+

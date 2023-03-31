@@ -1,0 +1,13 @@
+Index: fstools-2021-01-04-c53b1882/block.c
+===================================================================
+--- fstools-2021-01-04-c53b1882.orig/block.c
++++ fstools-2021-01-04-c53b1882/block.c
+@@ -1300,7 +1300,7 @@ static int find_root_dev(char *buf, int
+ 	while ((e = readdir(d)) != NULL) {
+ 		snprintf(buf, len, "/dev/%s", e->d_name);
+ 
+-		if (stat(buf, &s) || s.st_rdev != root)
++		if (stat(buf, &s) || s.st_rdev != root || !S_ISBLK(s.st_mode))
+ 			continue;
+ 
+ 		closedir(d);

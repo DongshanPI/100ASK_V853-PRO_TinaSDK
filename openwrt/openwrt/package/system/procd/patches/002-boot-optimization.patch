@@ -1,0 +1,101 @@
+Index: procd-2021-03-08-2cfc26f8/initd/init.c
+===================================================================
+--- procd-2021-03-08-2cfc26f8.orig/initd/init.c
++++ procd-2021-03-08-2cfc26f8/initd/init.c
+@@ -38,6 +38,7 @@
+ #include "../watchdog.h"
+ 
+ unsigned int debug = 0;
++pid_t gKmodLoaderPid;
+ 
+ static void
+ signal_shutdown(int signal, siginfo_t *siginfo, void *data)
+@@ -135,15 +136,7 @@ main(int argc, char **argv)
+ 	if (pid <= 0) {
+ 		ERROR("Failed to start kmodloader instance: %m\n");
+ 	} else {
+-		const struct timespec req = {0, 10 * 1000 * 1000};
+-		int i;
+-
+-		for (i = 0; i < 1200; i++) {
+-			if (waitpid(pid, NULL, WNOHANG) > 0)
+-				break;
+-			nanosleep(&req, NULL);
+-			watchdog_ping();
+-		}
++		gKmodLoaderPid = pid;
+ 	}
+ 	uloop_init();
+ 	preinit();
+Index: procd-2021-03-08-2cfc26f8/initd/preinit.c
+===================================================================
+--- procd-2021-03-08-2cfc26f8.orig/initd/preinit.c
++++ procd-2021-03-08-2cfc26f8/initd/preinit.c
+@@ -16,6 +16,7 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/mount.h>
++#include <sys/wait.h>
+ #include <fcntl.h>
+ 
+ #include <libubox/uloop.h>
+@@ -32,6 +33,7 @@
+ 
+ static struct uloop_process preinit_proc;
+ static struct uloop_process plugd_proc;
++extern pid_t gKmodLoaderPid;
+ 
+ static void
+ check_dbglvl(void)
+@@ -97,6 +99,16 @@ spawn_procd(struct uloop_process *proc,
+ 	if (plugd_proc.pid > 0)
+ 		kill(plugd_proc.pid, SIGKILL);
+ 
++	if (gKmodLoaderPid != 0) {
++		int i;
++		for (i = 0; i < 120; i++) {
++			if (waitpid(gKmodLoaderPid, NULL, WNOHANG) > 0)
++				break;
++			usleep(10000);
++			watchdog_ping();
++		}
++	}
++
+ 	unsetenv("PREINIT");
+ 	unlink("/tmp/.preinit");
+ 
+Index: procd-2021-03-08-2cfc26f8/plug/hotplug.c
+===================================================================
+--- procd-2021-03-08-2cfc26f8.orig/plug/hotplug.c
++++ procd-2021-03-08-2cfc26f8/plug/hotplug.c
+@@ -37,7 +37,7 @@
+ 
+ #include "hotplug.h"
+ 
+-#define HOTPLUG_WAIT	500
++#define HOTPLUG_WAIT	50
+ 
+ struct cmd_handler;
+ struct cmd_queue {
+Index: procd-2021-03-08-2cfc26f8/state.c
+===================================================================
+--- procd-2021-03-08-2cfc26f8.orig/state.c
++++ procd-2021-03-08-2cfc26f8/state.c
+@@ -103,7 +103,7 @@ static void perform_halt()
+ 		LOG("- reboot -\n");
+ 
+ 	/* Allow time for last message to reach serial console, etc */
+-	sleep(1);
++	/*sleep(1);*/
+ 
+ 	if (is_container()) {
+ 		reboot(reboot_event);
+@@ -192,7 +192,7 @@ static void state_enter(void)
+ 		LOG("- SIGKILL processes -\n");
+ 		kill(-1, SIGKILL);
+ 		sync();
+-		sleep(1);
++		usleep(500000);
+ #ifndef DISABLE_INIT
+ 		perform_halt();
+ #else

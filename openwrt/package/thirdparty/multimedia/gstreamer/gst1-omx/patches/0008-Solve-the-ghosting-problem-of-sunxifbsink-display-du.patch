@@ -1,0 +1,29 @@
+From 8b0d5a4dba5d60a63c13c753012ae39ca9845587 Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Wed, 11 Aug 2021 09:47:07 +0800
+Subject: [PATCH] Solve the ghosting problem of sunxifbsink display during
+ video playback
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ omx/gstomxvideodec.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/omx/gstomxvideodec.c b/omx/gstomxvideodec.c
+index e044c78..7bbca79 100755
+--- a/omx/gstomxvideodec.c
++++ b/omx/gstomxvideodec.c
+@@ -1462,8 +1462,8 @@ gst_omx_video_dec_reconfigure_output_port (GstOMXVideoDec * self)
+       output_crop.nLeft, output_crop.nTop, output_crop.nWidth, output_crop.nHeight);
+ 
+   state = gst_video_decoder_set_output_state (GST_VIDEO_DECODER (self),
+-      format,output_crop.nWidth/* port_def.format.video.nFrameWidth*/,
+-      output_crop.nHeight/*port_def.format.video.nFrameHeight*/, self->input_state);
++      format,/*output_crop.nWidth*/port_def.format.video.nFrameWidth,
++      /*output_crop.nHeight*/port_def.format.video.nFrameHeight, self->input_state);
+ 
+   if (!gst_video_decoder_negotiate (GST_VIDEO_DECODER (self))) {
+     gst_video_codec_state_unref (state);
+-- 
+2.29.0
+

@@ -1,0 +1,96 @@
+From 33ebc67ff2db25a1e0fda9470459152a7dc5dfdf Mon Sep 17 00:00:00 2001
+From: houxiaoni <houxiaoni@allwinnertech.com>
+Date: Fri, 30 Jul 2021 17:04:47 +0800
+Subject: [PATCH] add missing includes and libs
+
+Signed-off-by: houxiaoni <houxiaoni@allwinnertech.com>
+---
+ utils/cec-compliance/Makefile.am | 2 +-
+ utils/cec-ctl/Makefile.am        | 2 +-
+ utils/cec-follower/Makefile.am   | 2 +-
+ utils/libcecutil/cec-info.cpp    | 2 ++
+ utils/rds-ctl/rds-ctl.cpp        | 2 +-
+ 5 files changed, 6 insertions(+), 4 deletions(-)
+ mode change 100644 => 100755 utils/cec-compliance/Makefile.am
+ mode change 100644 => 100755 utils/cec-ctl/Makefile.am
+ mode change 100644 => 100755 utils/cec-follower/Makefile.am
+ mode change 100644 => 100755 utils/libcecutil/cec-info.cpp
+ mode change 100644 => 100755 utils/rds-ctl/rds-ctl.cpp
+
+diff --git a/utils/cec-compliance/Makefile.am b/utils/cec-compliance/Makefile.am
+old mode 100644
+new mode 100755
+index e10c624..d7d2ea1
+--- a/utils/cec-compliance/Makefile.am
++++ b/utils/cec-compliance/Makefile.am
+@@ -3,7 +3,7 @@ man_MANS = cec-compliance.1
+ 
+ cec_compliance_SOURCES = cec-compliance.cpp cec-compliance.h cec-test.cpp cec-test-adapter.cpp cec-test-audio.cpp cec-test-power.cpp cec-test-fuzzing.cpp
+ cec_compliance_CPPFLAGS = -I$(top_srcdir)/utils/libcecutil
+-cec_compliance_LDADD = -lrt ../libcecutil/libcecutil.la
++cec_compliance_LDADD = -lrt ../libcecutil/libcecutil.la -lpthread
+ 
+ cec-compliance.cpp: version.h
+ 
+diff --git a/utils/cec-ctl/Makefile.am b/utils/cec-ctl/Makefile.am
+old mode 100644
+new mode 100755
+index 24341ed..8ab107e
+--- a/utils/cec-ctl/Makefile.am
++++ b/utils/cec-ctl/Makefile.am
+@@ -3,6 +3,6 @@ man_MANS = cec-ctl.1
+ 
+ cec_ctl_SOURCES = cec-ctl.cpp cec-pin.cpp cec-ctl.h
+ cec_ctl_CPPFLAGS = -I$(top_srcdir)/utils/libcecutil
+-cec_ctl_LDADD = -lrt ../libcecutil/libcecutil.la
++cec_ctl_LDADD = -lrt ../libcecutil/libcecutil.la -lpthread
+ 
+ EXTRA_DIST = cec-ctl.1
+diff --git a/utils/cec-follower/Makefile.am b/utils/cec-follower/Makefile.am
+old mode 100644
+new mode 100755
+index a550cd1..2a66dfe
+--- a/utils/cec-follower/Makefile.am
++++ b/utils/cec-follower/Makefile.am
+@@ -3,7 +3,7 @@ man_MANS = cec-follower.1
+ 
+ cec_follower_SOURCES = cec-follower.cpp cec-follower.h cec-processing.cpp cec-tuner.cpp
+ cec_follower_CPPFLAGS = -I$(top_srcdir)/utils/libcecutil
+-cec_follower_LDADD = -lrt ../libcecutil/libcecutil.la
++cec_follower_LDADD = -lrt ../libcecutil/libcecutil.la -lpthread
+ 
+ cec-follower.cpp: version.h
+ 
+diff --git a/utils/libcecutil/cec-info.cpp b/utils/libcecutil/cec-info.cpp
+old mode 100644
+new mode 100755
+index f6e6091..1ab8c95
+--- a/utils/libcecutil/cec-info.cpp
++++ b/utils/libcecutil/cec-info.cpp
+@@ -16,6 +16,8 @@
+ 
+ #include "cec-msgs-gen.h"
+ 
++#include <cctype>
++
+ const char *cec_opcode2s(unsigned opcode)
+ {
+ 	for (unsigned i = 0; i < sizeof(msgtable) / sizeof(msgtable[0]); i++)
+diff --git a/utils/rds-ctl/rds-ctl.cpp b/utils/rds-ctl/rds-ctl.cpp
+old mode 100644
+new mode 100755
+index 73fc7e3..78721d5
+--- a/utils/rds-ctl/rds-ctl.cpp
++++ b/utils/rds-ctl/rds-ctl.cpp
+@@ -918,7 +918,7 @@ static void get_options(const int fd, const int capabilities, struct v4l2_freque
+ 				printf("\tFrequency range      : %.1f MHz - %.1f MHz\n",
+ 					 vt.rangelow / 16.0, vt.rangehigh / 16.0);
+ 			printf("\tSignal strength/AFC  : %ld%%/%d\n",
+-				lround(vt.signal / 655.25), vt.afc);
++				(long int)(vt.signal / 655.25), vt.afc);
+ 			printf("\tCurrent audio mode   : %s\n", audmode2s(vt.audmode));
+ 			printf("\tAvailable subchannels: %s\n",
+ 					rxsubchans2s(vt.rxsubchans).c_str());
+-- 
+2.29.0
+
