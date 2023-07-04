@@ -526,7 +526,7 @@
 
         lcd_pwm_used        = <1>;
         lcd_pwm_ch          = <9>;
-        lcd_pwm_freq        = <500>;
+        lcd_pwm_freq        = <5000>;
         lcd_pwm_pol         = <1>;
 
         lcd_frm = <1>;
